@@ -3,8 +3,8 @@ A collection of plugins for ImageJ developed for image analysis with specific re
 
 ## List of plugins
 
-- [RGB Colocalizer](#rgb-colocalizer) ([RGB_Colocalizer.java](../blob/main/RGB_Colocalizer.java)).
-- [RGB Immunoreactivity](#rgb-immunoreactivity) ([RGB_Immunoreactivity.java](../blob/main/RGB_Immunoreactivity.java)).
+- [RGB Colocalizer](#rgb-colocalizer) ([RGB_Colocalizer.java](../blob/main/plugins/RGB_Colocalizer.java)).
+- [RGB Immunoreactivity](#rgb-immunoreactivity) ([RGB_Immunoreactivity.java](../blob/main/plugins/RGB_Immunoreactivity.java)).
 
 [Installation instructions](#requirements-and-installation).
 
