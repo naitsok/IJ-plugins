@@ -1,4 +1,4 @@
-[![version](https://img.shields.io/badge/version-v1.0.2-orange)](https://github.com/naitsok/IJ-plugins/)
+[![version](https://img.shields.io/badge/version-v1.0.3-orange)](https://github.com/naitsok/IJ-plugins/)
 [![build](https://img.shields.io/badge/build-passing-green.svg)](https://github.com/naitsok/IJ-plugins/releases/)
 [![DOI](https://zenodo.org/badge/350137419.svg)](https://zenodo.org/badge/latestdoi/350137419)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
@@ -48,18 +48,18 @@ RGB_Immunoreactivity.java plugin is a handy plugin that combines the functionali
 ## Requirements and Installation
 ImageJ 1.50i or higher is required (Java 1.8).
 
-The plugins in this [repository](https://github.com/naitsok/IJ-plugins) are stored as Java (*.java) text files. They must be first compiled to *.class files in order to be recognized by ImageJ. *.class files can be downloaded from the [releases](page) and copied to ImageJ's or Fiji's plugin folder.
+The plugins in this [repository](https://github.com/naitsok/IJ-plugins) are stored as Java (*.java) text files. They must be first compiled to *.class files in order to be recognized by ImageJ. *.class files can be downloaded from the [releases](https://github.com/naitsok/IJ-plugins/releases/) and copied to ImageJ's or Fiji's plugin folder.
 
 ### Complile *.java files
 To compile *.java files ImageJ 1.50i or higher is required. Compilation of *.java files is not supported by Fiji.
 Compilation:
-1. Copy into ImajeJ plugin directory
-2. From ImageJ menu, Plugins -> Compile and Run -> select the RGB_Immunoreactivity.java
-3. Restart ImageJ to get the plugin under the Plugins menu
+1. Copy into ImajeJ plugin directory.
+2. From ImageJ menu, Plugins -> Compile and Run -> select the *.java file (e.g. RGB_Immunoreactivity.java).
+3. Restart ImageJ to get the plugin under the Plugins menu.
 
 ### Using *.class files
 
-*.class files can be downloaded from [releases](page). Both ImageJ and Fiji recognize the *.class files as installed plugins after they are copied in the plugins folder.
+*.class files can be downloaded from [releases](https://github.com/naitsok/IJ-plugins/releases/). Both ImageJ and Fiji recognize the *.class files as installed plugins after they are copied in the plugins folder.
 
 
 ## Credits
@@ -74,6 +74,7 @@ To cite the latest version:
 M. Ivanova, K. Tamarov. 2021. IJ plugins. [DOI: 10.5281/zenodo.4629678](https://doi.org/10.5281/zenodo.4629678).
 
 To cite the specific version, select the DOI of soecific version on [Zenodo page](https://doi.org/10.5281/zenodo.4629678):
+
 M. Ivanova, K. Tamarov. 2021. IJ plugins. DOI: (Use DOI of specific version).
 
 

@@ -91,12 +91,12 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 	private static int ORANGE = 0xFF8000;
 
 	// Results
-	private String resultsTitle = "Image titles for colocalization\tCh1 pixels\tCh2 pixels\tColoc pixels\tPercent Ch1\tPercent Ch2\tPercent Coloc\tCh1 Overlap Ch2\tCh2 Overlap Ch1\t";
+	private String resultsTitle = "Image titles for colocalization\tSlice #\tCh1 vs Ch2\tCh1 pixels\tCh2 pixels\tColoc pixels\tPercent Ch1\tPercent Ch2\tPercent Coloc\tCh1 Overlap Ch2\tCh2 Overlap Ch1\t";
 	private String rgTitle = "%s vs %s\tRed pixels\tGreen pixels\tColoc pixels\tPerc Red\tPerc Green\tPerc Coloc\tRed Overlap Green\tGreen Overlap Red\t";
 	private String rbTitle = "%s vs %s\tRed pixels\tBlue pixels\tColoc pixels\tPerc Red\tPerc Blue\tPerc Coloc\tRed Overlap Blue\tBlue Overlap Red\t";
 	private String gbTitle = "%s vs %s\tGreen pixels\tBlue pixels\tColoc pixels\tPerc Green\tPerc Blue\tPerc Coloc\tGreen Overlap Blue\tBlue Overlap Green\t";
 	private String allChTitle = "%s vs %s\tBlue pixels\tGreen/Red pixels\tColoc pixels\tPerc Blue\tPerc Green/Red\tPerc Coloc\tBlue Overlap Green/Red\tGreen/Red Overlap Blue\t";
-	private String dataFormat = "%s\t%d\t%d\t%d\t%.3f\t%.3f\t%.3f\t%.5f\t%.5f\t";
+	private String dataFormat = "%s\t%d\t%s\t%d\t%d\t%d\t%.3f\t%.3f\t%.3f\t%.5f\t%.5f\t";
 	private String final2ChResutsTitle = "";
 	private ArrayList<String> allLst2ChResults = new ArrayList<String>();
 	private ArrayList<String> allLst3ChResults = new ArrayList<String>();
@@ -159,30 +159,30 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		final2ChResutsTitle = resultsTitle;
 		ArrayList<String> lst2ChResults = new ArrayList<String>();
 		ColocResult result = null;	
-
+		
 		if (iR != null && iB != null) {
 			result = colocalize(iR, iB, redThres, blueThres, RED, BLUE, "Red", "Blue");
-			lst2ChResults = this.appendResults(lst2ChResults, result.toTextRows(rbTitle, dataFormat), showChannelsInOneRow);
+			lst2ChResults = this.appendResults(lst2ChResults, result.toTextRows(dataFormat), showChannelsInOneRow);
 			if (showChannelsInOneRow) final2ChResutsTitle = final2ChResutsTitle + resultsTitle;
 		}
 		if (iG != null && iB != null) {
 			result = colocalize(iG, iB, greenThres, blueThres, GREEN, BLUE, "Green", "Blue");
-			lst2ChResults = this.appendResults(lst2ChResults, result.toTextRows(gbTitle, dataFormat), showChannelsInOneRow);
+			lst2ChResults = this.appendResults(lst2ChResults, result.toTextRows(dataFormat), showChannelsInOneRow);
 			if (showChannelsInOneRow) final2ChResutsTitle = final2ChResutsTitle + resultsTitle;
 		}
 		if (iR != null && iG != null) {
 			result = colocalize(iR, iG, redThres, greenThres, RED, GREEN, "Red", "Green");
-			lst2ChResults = this.appendResults(lst2ChResults, result.toTextRows(rgTitle, dataFormat), showChannelsInOneRow);
+			lst2ChResults = this.appendResults(lst2ChResults, result.toTextRows(dataFormat), showChannelsInOneRow);
 		}
 		allLst2ChResults.addAll(lst2ChResults);
-
+		
 		// now do the blue (DAPI) colocalization with the result of colocalization of red and green channel
 		// result variable now contains colocalization of Red and Green channels
 		if (iR != null && iG != null && iB != null) {
 			showColorColoc = false; showIntensityColoc = false; // does not make sense because Greed/Red coloc image is mask
 			result = colocalize(iB, new ImagePlus("Colocalized Red and Green channels", result.iCh1vsCh2Stack), blueThres, 100, BLUE, ORANGE, "Blue", "Red/Green colocalized");
 		}
-		Collections.addAll(allLst3ChResults, result.toTextRows(allChTitle, dataFormat));
+		Collections.addAll(allLst3ChResults, result.toTextRows(dataFormat));
 
 	}
 
@@ -796,15 +796,16 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			ch2OverlapCh1 = new double[nSlices];
 		}
 
-		public String[] toTextRows(String titleFormat, String dataFormat) {
-			String[] arrResult = new String[nSlices + 1];
-			arrResult[0] = String.format(titleFormat, i1Title, i2Title);
-			for (int i = 1; i <= nSlices; i++) {
+		public String[] toTextRows(String dataFormat) {
+			String[] arrResult = new String[nSlices];
+			for (int i = 0; i < nSlices; i++) {
 				arrResult[i] = String.format(dataFormat, 
-					ch1Title + " vs " + ch2Title + " for slice " + i, 
-					ch1Counts[i - 1], ch2Counts[i - 1], colocCounts[i - 1],
-					percCh1NoCh2[i - 1], percCh2NoCh1[i - 1], percColoc[i - 1],
-					ch1OverlapCh2[i - 1], ch2OverlapCh1[i - 1]);
+					i1Title + " vs " + i2Title,
+					i + 1,
+					ch1Title + " vs " + ch2Title, 
+					ch1Counts[i], ch2Counts[i], colocCounts[i],
+					percCh1NoCh2[i], percCh2NoCh1[i], percColoc[i],
+					ch1OverlapCh2[i], ch2OverlapCh1[i]);
 			}
 			return arrResult;
 		}
