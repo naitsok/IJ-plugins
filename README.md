@@ -1,4 +1,4 @@
-[![version](https://img.shields.io/badge/version-v1.0.1-orange)](https://github.com/naitsok/IJ-plugins/)
+[![version](https://img.shields.io/badge/version-v1.0.2-orange)](https://github.com/naitsok/IJ-plugins/)
 [![build](https://img.shields.io/badge/build-passing-green.svg)](https://github.com/naitsok/IJ-plugins/releases/)
 [![DOI](https://zenodo.org/badge/350137419.svg)](https://zenodo.org/badge/latestdoi/350137419)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
@@ -67,8 +67,15 @@ The plugins are developed by Mariia Ivanova and Konstantin Tamarov.
 
 Licence: MIT.
 
-When using please give the reference:
-M. Ivanova, K. Tamarov. 2021. IJ plugins. [DOI: 10.5281/zenodo.4629679](https://doi.org/10.5281/zenodo.4629679).
+When using please give the reference.
+
+To cite the latest version:
+
+M. Ivanova, K. Tamarov. 2021. IJ plugins. [DOI: 10.5281/zenodo.4629678](https://doi.org/10.5281/zenodo.4629678).
+
+To cite the specific version, select the DOI of soecific version on [Zenodo page](https://doi.org/10.5281/zenodo.4629678):
+M. Ivanova, K. Tamarov. 2021. IJ plugins. DOI: (Use DOI of specific version).
+
 
 
 
