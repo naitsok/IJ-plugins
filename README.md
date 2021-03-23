@@ -1,4 +1,4 @@
-[![version](https://img.shields.io/badge/version-v1.0.0-orange)](https://github.com/naitsok/IJ-plugins/)
+[![version](https://img.shields.io/badge/version-v1.0.1-orange)](https://github.com/naitsok/IJ-plugins/)
 [![build](https://img.shields.io/badge/build-passing-green.svg)](https://github.com/naitsok/IJ-plugins/releases/)
 [![DOI](https://zenodo.org/badge/350137419.svg)](https://zenodo.org/badge/latestdoi/350137419)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
