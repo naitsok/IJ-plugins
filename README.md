@@ -20,24 +20,43 @@ Depending on the selected analysis type, the pluging will allow to choose betwee
 
 The main reporting page is the Colocalization statistics for pair of channels, which has the following columns:
 - Image titles for colocalization.
-- Ch1 pixels: number of pixels in channel 1 that are above the threshold and are not colocalized with pixels in channel 2.
-- Ch2 pixels: number of pixels in channel 2 that are above the threshold and not colocalized with pixels in channel 1.
-- Coloc pixels: number of colocalized pixels, i.e. the number of pixel that are in channel 1 and in channel 2 and are above threshold as well.
-- Perc Ch1: percent of pixels that are in channel 1 but not in channel 2 and not colocalized with channel 2 (and above threshold).
-- Perc Ch2: percent of pixels that are in channel 2 but not in channel 1 and not colocalized with channel 1 (and above threshold).
-- Perc Coloc: percent of colocalized pixels, i.e. pixels that are both in channel 1 and in channel 2 normalized to the total number of pixels in both channels and that are above the corresponding thresholds.
-- Ch1 Overlap Ch2: fraction of pixels in channel 1 that are overlaped (colocalized) with channel 2 (i.e. number of colocalized pixels divided by the total number of pixels in channel 1).
-- Ch2 Overlap Ch1: fraction of pixels in channel 2 that are overlaped (colocalized) with channel 1 (i.e. number of colocalized pixels divided by the total number of pixels in channel 2) .
+- Ch1 pixels. Number of pixels in channel 1 that are above the threshold and are not colocalized with pixels in channel 2.
+- Ch2 pixels. Number of pixels in channel 2 that are above the threshold and not colocalized with pixels in channel 1.
+- Coloc pixels. Number of colocalized pixels, i.e. the number of pixel that are in channel 1 and in channel 2 and are above threshold as well.
+- Perc Ch1. Percent of pixels that are in channel 1 but not in channel 2 and not colocalized with channel 2 (and above threshold).
+- Perc Ch2. Percent of pixels that are in channel 2 but not in channel 1 and not colocalized with channel 1 (and above threshold).
+- Perc Coloc. Percent of colocalized pixels, i.e. pixels that are both in channel 1 and in channel 2 normalized to the total number of pixels in both channels and that are above the corresponding thresholds.
+- Ch1 Overlap Ch2. Fraction of pixels in channel 1 that are overlaped (colocalized) with channel 2 (i.e. number of colocalized pixels divided by the total number of pixels in channel 1).
+- Ch2 Overlap Ch1. Fraction of pixels in channel 2 that are overlaped (colocalized) with channel 1 (i.e. number of colocalized pixels divided by the total number of pixels in channel 2) .
 
 If there are all three channels available, or images are three channel images, additional analysis is performed. This additional analysis performs the colocalization calculation between blue channel and the result of colocalzation for red and green channels. This is done, because blue channel is in the most cases DAPI/Hoechst staining of cell nuclei. Thus, blue channel can be used to quantify the number of cells in the image and normalize the colocalization results to number of cells.
 
 There are several other settings related to result reporting that can be changed:
 - Show color coded colocalization plot. This setting plots a 256 x 256 figure for each pair of channels. The plot shows that pixels with such intensity were colocalized in the specified pair of channels. Also  thresholds for each channel are shown. Note: the result shows only if the pixels with specific intensity were colocalized in the channels and does not show the number of the colocalized pixels.
 - Show logarithmic intensity colocalization plot. This setting plots a 256 x 256 figure for each pair of channels. The plots shows the number of colocalized pixels with each pixel intensity value in the logarithmic scale. Also thresholds for each channel are shown. This plot is better version of the previous one because it shows the number of colocalized pixels although in logarithmic scale for better visualization.
+- Show colocalized image. This setting shows a 8-bit mask with colocalized pixels, i.e. pixels that are found in both channels and are above thresholds.
+- Show data for all channels in one row. The plugin calculates colocalization between a pair of channels. When there are all three channels available, there are three pairs of channels for colocalization. The results can be then listed as separate rows for each pair of channels or place all the results into one row (mostly for the ease of analysis in e.g. MS Excel). 
 
 ### RGB Immunoreactivity
 
+RGB_Immunoreactivity.java plugin is a handy plugin that combines the functionality of ImageJ to count number of cells and calulcate their area in each channel of images located in a directory. The user is asked to specify the thersholds for each channel and minimum size of cells in pixels. For each image in the selected directory, the plugin creates masks for each channel and counts the number of cells and their area (using "Analyze particles..." functionality). The results are displayed in the standard window of "Analyze particles...".
+
 ## Requirements and Installation
+ImageJ 1.50i or higher is required (Java 1.8).
+
+The plugins in this [repository](https://github.com/naitsok/IJ-plugins) are stored as Java (*.java) text files. They must be first compiled to *.class files in order to be recognized by ImageJ. *.class files can be downloaded from the [releases](page) and copied to ImageJ's or Fiji's plugin folder.
+
+### Complile *.java files
+To compile *.java files ImageJ 1.50i or higher is required. Compilation of *.java files is not supported by Fiji.
+Compilation:
+1. Copy into ImajeJ plugin directory
+2. From ImageJ menu, Plugins -> Compile and Run -> select the RGB_Immunoreactivity.java
+3. Restart ImageJ to get the plugin under the Plugins menu
+
+### Using *.class files
+
+*.class files can be downloaded from [releases](page). Both ImageJ and Fiji recognize the *.class files as installed plugins after they are copied in the plugins folder.
+
 
 ## Credits
 The plugins are developed by Mariia Ivanova and Konstantin Tamarov.
