@@ -1,10 +1,14 @@
+[![version](https://img.shields.io/badge/version-v1.0.0-orange)](https://github.com/naitsok/IJ-plugins/)
+[![build](https://img.shields.io/badge/build-passing-green.svg)](https://github.com/naitsok/IJ-plugins/releases/)
+[![DOI](https://zenodo.org/badge/350137419.svg)](https://zenodo.org/badge/latestdoi/350137419)
+[![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 # Plugins of ImageJ
-A collection of plugins for ImageJ developed for image analysis with specific requirements. The plugins are designed to be user-friendly and easy to use in the specialized tasks.
+A collection of plugins for ImageJ developed for image analysis with specific requirements. The plugins are designed to be user-friendly and easy to use in the specialized tasks. When using, please give the [reference](#credits).
 
 ## List of plugins
 
-- [RGB Colocalizer](#rgb-colocalizer) ([RGB_Colocalizer.java](./blob/main/plugins/RGB_Colocalizer.java)).
-- [RGB Immunoreactivity](#rgb-immunoreactivity) ([RGB_Immunoreactivity.java](./blob/main/plugins/RGB_Immunoreactivity.java)).
+- [RGB Colocalizer](#rgb-colocalizer) ([RGB_Colocalizer.java](./plugins/RGB_Colocalizer.java)).
+- [RGB Immunoreactivity](#rgb-immunoreactivity) ([RGB_Immunoreactivity.java](./plugins/RGB_Immunoreactivity.java)).
 
 [Installation instructions](#requirements-and-installation).
 
@@ -61,6 +65,11 @@ Compilation:
 ## Credits
 The plugins are developed by Mariia Ivanova and Konstantin Tamarov.
 
-Licence: MIT
+Licence: MIT.
+
+When using please give the reference:
+M. Ivanova, K. Tamarov. 2021. IJ plugins. [DOI: 10.5281/zenodo.4629679](https://doi.org/10.5281/zenodo.4629679).
+
+
 
 
