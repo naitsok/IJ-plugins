@@ -16,14 +16,16 @@
 // The plugin can be freely downloaded, modified and redistributed with the appropriate credits given to the authors
 // License: MIT
 
-
-import ij.*;
-import ij.process.*;
-import ij.gui.*;
 import java.awt.*;
 import java.io.*;
+import ij.*;
+import ij.gui.*;
+import ij.measure.*;
 import ij.plugin.*;
 import ij.plugin.frame.*;
+import ij.process.*;
+import ij.text.*;
+
 
 public class RGB_Immunoreactivity implements PlugIn {
 
@@ -36,8 +38,13 @@ public class RGB_Immunoreactivity implements PlugIn {
 	private TextField tfRedThres, tfGreenThres, tfBlueThres;
 
 	// Particle size
-	private String particleSize = "100";
-	private TextField tfParticleSize;
+	private String particleSizeRed = "100";
+	private TextField tfParticleSizeRed;
+	private String particleSizeGreen = "100";
+	private TextField tfParticleSizeGreen;
+	private String particleSizeBlue = "100";
+	private TextField tfParticleSizeBlue;
+	private String[] allParticleSizes = new String[3];
 
 	public void run(String arg) {
 		if (!showDialog())
@@ -56,28 +63,48 @@ public class RGB_Immunoreactivity implements PlugIn {
 				// process image per channel
 				ImagePlus img1Ch = null;
 				for (int channel = 0; channel < 3; channel++) {
+
+					// select image and get the channel from it
 					img1Ch = ChannelSplitter.split(img)[channel];
 					img1Ch.setTitle(img.getTitle() + channelIntToStr(channel));
+
+					// Convert image to mask
 					IJ.setThreshold(img1Ch, allThresholds[channel], 255);
 					IJ.run(img1Ch, "Convert to Mask", "");
 					// img1Ch.show();
-					IJ.run(img1Ch, "Analyze Particles...", "size=" + particleSize + "-Infinity pixel show=Nothing include summarize");
+
+					IJ.run(img1Ch, "Analyze Particles...", "size=" + allParticleSizes[channel] + "-Infinity pixel show=Nothing include summarize");
 				}
 			}
 			IJ.showProgress((double)i / files.length);
 		}
+		// Get data from Summary window and arrange it so that all three channels in one image is in one row
+		ResultsTable resTable = ResultsTable.getResultsTable("Summary");
+		
+		// loop through results and join into rows each there channels
+		String[] resultsInRow = new String[resTable.size() / 3];
+		for (int i = 0; i < resTable.size() / 3; i++) {
+			resultsInRow[i] = resTable.getRowAsString(3 * i) + "\t" + resTable.getRowAsString(3 * i + 1) + "\t" + resTable.getRowAsString(3 * i + 2);
+		}
+
+		new TextWindow("Immunoreactivity Results", 
+			resTable.getColumnHeadings() + "\t" + resTable.getColumnHeadings() + "\t" + resTable.getColumnHeadings(),
+			String.join("\n", resultsInRow),
+			1500, 900);
 	}
 
 	private boolean showDialog() {
 
 		// Creating dialog to select images
 		gd = new GenericDialog("Immunoreactivity RGB");
-		gd.setLayout(new GridLayout(5, 2, 5, 5));
+		gd.setLayout(new GridLayout(7, 2, 5, 5));
 
 		tfRedThres = new TextField("" + redThres, 4);
         tfGreenThres = new TextField("" + greenThres, 4);
         tfBlueThres = new TextField("" + blueThres, 4);
-		tfParticleSize = new TextField(particleSize, 4);
+		tfParticleSizeRed = new TextField(particleSizeRed, 4);
+		tfParticleSizeGreen = new TextField(particleSizeGreen, 4);
+		tfParticleSizeBlue = new TextField(particleSizeBlue, 4);
 		
 		gd.add(new Label("Red fluorescense noise threshold (0-255):", Label.LEFT));
 		gd.add(tfRedThres);
@@ -85,8 +112,12 @@ public class RGB_Immunoreactivity implements PlugIn {
 		gd.add(tfGreenThres);
 		gd.add(new Label("Blue fluorescense noise threshold (0-255):", Label.LEFT));
 		gd.add(tfBlueThres);
-		gd.add(new Label("Minimum particle size (min-Infinity):", Label.LEFT));
-		gd.add(tfParticleSize);			
+		gd.add(new Label("Minimum particle size for Red channel (min-Infinity):", Label.LEFT));
+		gd.add(tfParticleSizeRed);
+		gd.add(new Label("Minimum particle size for Green channel (min-Infinity):", Label.LEFT));
+		gd.add(tfParticleSizeGreen);	
+		gd.add(new Label("Minimum particle size for Blue channel (min-Infinity):", Label.LEFT));
+		gd.add(tfParticleSizeBlue);	
 
 		gd.showDialog();
 
@@ -100,7 +131,10 @@ public class RGB_Immunoreactivity implements PlugIn {
 		allThresholds[0] = redThres; allThresholds[1] = greenThres; allThresholds[2] = blueThres;
 
 		// Get particle size
-		particleSize = tfParticleSize.getText();
+		particleSizeRed = tfParticleSizeRed.getText();
+		particleSizeGreen = tfParticleSizeGreen.getText();
+		particleSizeBlue = tfParticleSizeBlue.getText();
+		allParticleSizes[0] = particleSizeRed; allParticleSizes[1] = particleSizeGreen; allParticleSizes[2] = particleSizeBlue;
 
 		return true;
 	}

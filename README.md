@@ -1,4 +1,4 @@
-[![version](https://img.shields.io/badge/version-v1.0.3-orange)](https://github.com/naitsok/IJ-plugins/)
+[![version](https://img.shields.io/badge/version-v1.0.4-orange)](https://github.com/naitsok/IJ-plugins/)
 [![build](https://img.shields.io/badge/build-passing-green.svg)](https://github.com/naitsok/IJ-plugins/releases/)
 [![DOI](https://zenodo.org/badge/350137419.svg)](https://zenodo.org/badge/latestdoi/350137419)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
@@ -24,6 +24,8 @@ Depending on the selected analysis type, the pluging will allow to choose betwee
 
 The main reporting page is the Colocalization statistics for pair of channels, which has the following columns:
 - Image titles for colocalization.
+- Slice \#. The number of slice in the image.
+- Ch1 vs Ch2. Titles of channels, e.g. Red vs Green.
 - Ch1 pixels. Number of pixels in channel 1 that are above the threshold and are not colocalized with pixels in channel 2.
 - Ch2 pixels. Number of pixels in channel 2 that are above the threshold and not colocalized with pixels in channel 1.
 - Coloc pixels. Number of colocalized pixels, i.e. the number of pixel that are in channel 1 and in channel 2 and are above threshold as well.
@@ -43,7 +45,10 @@ There are several other settings related to result reporting that can be changed
 
 ### RGB Immunoreactivity
 
-RGB_Immunoreactivity.java plugin is a handy plugin that combines the functionality of ImageJ to count number of cells and calulcate their area in each channel of images located in a directory. The user is asked to specify the thersholds for each channel and minimum size of cells in pixels. For each image in the selected directory, the plugin creates masks for each channel and counts the number of cells and their area (using "Analyze particles..." functionality). The results are displayed in the standard window of "Analyze particles...".
+RGB_Immunoreactivity.java plugin is a handy plugin that combines the functionality of ImageJ to count number of cells and calulcate their area in each channel of images located in a directory. The user is asked to specify the thersholds for each channel and minimum size of cells in pixels. For each image in the selected directory, the plugin creates masks for each channel and counts the number of cells and their area (using "Analyze particles..." functionality). The results are displayed in two different windows: 
+
+1. The standard "Summary" window of "Analyze particles...".
+2. The "Immunoreactivity Results" window. Here, each row contains calculated data for all three channels for each image.
 
 ## Requirements and Installation
 ImageJ 1.50i or higher is required (Java 1.8).
