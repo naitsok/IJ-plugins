@@ -1,4 +1,4 @@
-[![version](https://img.shields.io/badge/version-v1.0.4-orange)](https://github.com/naitsok/IJ-plugins/)
+[![version](https://img.shields.io/badge/version-v1.0.5-orange)](https://github.com/naitsok/IJ-plugins/)
 [![build](https://img.shields.io/badge/build-passing-green.svg)](https://github.com/naitsok/IJ-plugins/releases/)
 [![DOI](https://zenodo.org/badge/350137419.svg)](https://zenodo.org/badge/latestdoi/350137419)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
@@ -45,7 +45,13 @@ There are several other settings related to result reporting that can be changed
 
 ### RGB Immunoreactivity
 
-RGB_Immunoreactivity.java plugin is a handy plugin that combines the functionality of ImageJ to count number of cells and calulcate their area in each channel of images located in a directory. The user is asked to specify the thersholds for each channel and minimum size of cells in pixels. For each image in the selected directory, the plugin creates masks for each channel and counts the number of cells and their area (using "Analyze particles..." functionality). The results are displayed in two different windows: 
+RGB_Immunoreactivity.java plugin is a handy plugin that combines the functionality of ImageJ to count number of cells and calculate their area. The plugin can work with a single three channel image or images located in a directory. The user is asked to specify the thersholds for each channel and minimum size of cells in pixels. 
+
+For a three channel image or each image in the selected directory, the plugin creates masks for each channel and counts the number of cells and their area (using "Analyze particles..." functionality). 
+
+In case of analysis of a single three channel image, ROI is taken into account, i.e. cells from the ROI are analyzed.
+
+The results are displayed in two different windows: 
 
 1. The standard "Summary" window of "Analyze particles...".
 2. The "Immunoreactivity Results" window. Here, each row contains calculated data for all three channels for each image.
