@@ -217,17 +217,17 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		
 		if (iR != null && iB != null) {
 			result = colocalize(iR, iB, redThres, blueThres, RED, BLUE, "Red", "Blue");
-			lst2ChResults = this.appendResults(lst2ChResults, result.toTextRows(dataFormat), showChannelsInOneRow);
+			lst2ChResults = this.appendResults(lst2ChResults, result.summaryToTextRows(dataFormat), showChannelsInOneRow);
 			if (showChannelsInOneRow) final2ChResutsTitle = final2ChResutsTitle + resultsTitle;
 		}
 		if (iG != null && iB != null) {
 			result = colocalize(iG, iB, greenThres, blueThres, GREEN, BLUE, "Green", "Blue");
-			lst2ChResults = this.appendResults(lst2ChResults, result.toTextRows(dataFormat), showChannelsInOneRow);
+			lst2ChResults = this.appendResults(lst2ChResults, result.summaryToTextRows(dataFormat), showChannelsInOneRow);
 			if (showChannelsInOneRow) final2ChResutsTitle = final2ChResutsTitle + resultsTitle;
 		}
 		if (iR != null && iG != null) {
 			result = colocalize(iR, iG, redThres, greenThres, RED, GREEN, "Red", "Green");
-			lst2ChResults = this.appendResults(lst2ChResults, result.toTextRows(dataFormat), showChannelsInOneRow);
+			lst2ChResults = this.appendResults(lst2ChResults, result.summaryToTextRows(dataFormat), showChannelsInOneRow);
 		}
 		allLst2ChResults.addAll(lst2ChResults);
 		
@@ -237,7 +237,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			showColorColoc = false; showIntensityColoc = false; // does not make sense because Greed/Red coloc image is mask
 			result = colocalize(iB, new ImagePlus("Colocalized Red and Green channels", result.iCh1vsCh2Stack), blueThres, 100, BLUE, ORANGE, "Blue", "Red/Green colocalized");
 		}
-		Collections.addAll(allLst3ChResults, result.toTextRows(dataFormat));
+		Collections.addAll(allLst3ChResults, result.summaryToTextRows(dataFormat));
 
 	}
 
@@ -248,7 +248,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		String.join("\n", allLst2ChResults), 
 		1500, 900);
 
-		// Colocalization for Blue (DAPI) vs colocalized Red and Green
+		// Colocalization for blue (nuclei) vs colocalized Red and Green
 		new TextWindow("Colocalization statistics for three channels",
 			resultsTitle,
 			String.join("\n", allLst3ChResults),
@@ -441,18 +441,21 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 
 			ImagePlus img = null;
 			for (int i = 0; i < files.length; i++) {
-				img = IJ.openImage(new File(dir, files[i]).getPath());
-				IJ.showStatus("Calculating for " + img.getTitle() +" out of total " + files.length + " images");
+				File imgFile = new File(dir, files[i]);
+				if (imgFile.isFile()) {
+					img = IJ.openImage(imgFile.getPath());
+					IJ.showStatus("Calculating for " + img.getTitle() +" out of total " + files.length + " images");
 
-				// process image only if it is 3-channel RGB
-				if (img.getType() == ImagePlus.COLOR_RGB) {
-					// process image per channel
-					iR = to8bitChannel(img, 0);
-					iG = to8bitChannel(img, 1);
-					iB = to8bitChannel(img, 2);
-					analyze();
+					// process image only if it is 3-channel RGB
+					if (img.getType() == ImagePlus.COLOR_RGB) {
+						// process image per channel
+						iR = to8bitChannel(img, 0);
+						iG = to8bitChannel(img, 1);
+						iB = to8bitChannel(img, 2);
+						analyze();
+					}
+					IJ.showProgress((double)i / files.length);
 				}
-				IJ.showProgress((double)i / files.length);
 			}
 			showResults();
 		}
@@ -556,7 +559,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			return null;
 		}
 
-		ColocResult result = new ColocResult(img1, img2, ch1Title, ch2Title, stackSize);
+		ColocResult result = new ColocResult(img1, img2, ch1Title, ch2Title, thres1, thres2, stackSize);
 
 		// Image processors for images and correlation graphs for each image in the stack
 		ImageProcessor img1Proc = null, img2Proc = null;
@@ -627,7 +630,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			// Create intensity plot from colocCounts and using maxCount
 			for (int x = 0; x < 256; x++) { // Loop through Y coordinate
                 		for (int y = 0; y < 256; y++) {
-					// Make intensity plot in lof scale for better visualization
+					// Make intensity plot in log scale for better visualization
 					colocIntensity.putPixel(x, y, getIntensityColor(Math.log((double)colocCounts.getPixelValue(x, y) + 1) / Math.log((double)result.maxCounts[i - 1])));
 				}
 			}
@@ -650,8 +653,8 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			colocIntensity.rotate(-90);
 			
 			// Add colocCounts, colocColorCode and colocIntensity to corresponding stacks
-			result.corrStack.addSlice("Correlation plot for slice " + i, colocCounts);
-			result.corrColorStack.addSlice("Correlation color plot for slice " + i, colocColorCode);
+			result.colocStack.addSlice("Correlation plot for slice " + i, colocCounts);
+			result.colocColorStack.addSlice("Correlation color plot for slice " + i, colocColorCode);
 			result.intensityStack.addSlice("Correlation intensty plot for slice " + i, colocIntensity);
 			result.iCh1vsCh2Stack.addSlice("Colocalization for slice " + i, colocProc);
 			
@@ -671,7 +674,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		IJ.showProgress(1.0);
 
 		if (showColorColoc)
-			new ImagePlus("Color correlation plot for " + ch1Title + " vs " + ch2Title + " channels", result.corrColorStack).show();
+			new ImagePlus("Color correlation plot for " + ch1Title + " vs " + ch2Title + " channels", result.colocColorStack).show();
 		if (showIntensityColoc)
 			new ImagePlus("Intesity correlation plot for " + ch1Title + " vs " + ch2Title + " channels", result.intensityStack).show();
 		if (showColocImage)
@@ -779,14 +782,16 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		public String i1Title, i2Title;
 		// Titles of channels to colocalize
 		public String ch1Title, ch2Title;
+		// Thresholds for channels to colocalize
+		public int ch1Thres, ch2Thres;
 		// Image with colocalization
 		public ImageStack iCh1vsCh2Stack;
 		// Stack plots to keep correlation plots for each slice
 		// The coordinates are 0-255 because of color intensity
-		public ImageStack corrStack;
+		public ImageStack colocStack;
 		// Color codes for stack plot
-		public ImageStack corrColorStack;
-		// Intesnity stack plot for each slice
+		public ImageStack colocColorStack;
+		// Intensity stack plot for each slice
 		public ImageStack intensityStack;
 		// Number of slices
 		public int nSlices;
@@ -816,23 +821,26 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		public double[] ch2OverlapCh1;
 
 		public ColocResult(ImagePlus img1, ImagePlus img2,
-			String chan1Title, String chan2Title, int numSlices) {
+			String chan1Title, String chan2Title,
+			int chan1Thres, int chan2Thres, int numSlices) {
 			// Creates an empty ColocResults for two images specified by titles
 			// numSlices is number of slices in the images
 			i1Title = img1.getTitle();
 			i2Title = img2.getTitle();
 			ch1Title = chan1Title;
 			ch2Title = chan2Title;
+			ch1Thres = chan1Thres;
+			ch2Thres = chan2Thres;
 			
-			// Create the image stack for colocolized image
+			// Create the image stack for colocalized image
 			ImageStack img1Stack = img1.getStack();
 			iCh1vsCh2Stack = new ImageStack(img1Stack.getWidth(), img1Stack.getHeight());
 
 			// Stack plots to keep correlation plots for each slice
 			// The coordinates are 0-255 because of color intensity
-			corrStack = new ImageStack(256, 256);
+			colocStack = new ImageStack(256, 256);
 			// Color codes for stack plot
-			corrColorStack = new ImageStack(256, 256);
+			colocColorStack = new ImageStack(256, 256);
 			// Intesnity stack plot for each slice
 			intensityStack = new ImageStack(256, 256);
 
@@ -851,7 +859,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			ch2OverlapCh1 = new double[nSlices];
 		}
 
-		public String[] toTextRows(String dataFormat) {
+		public String[] summaryToTextRows(String dataFormat) {
 			String[] arrResult = new String[nSlices];
 			for (int i = 0; i < nSlices; i++) {
 				arrResult[i] = String.format(dataFormat, 
@@ -863,6 +871,40 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 					ch1OverlapCh2[i], ch2OverlapCh1[i]);
 			}
 			return arrResult;
+		}
+
+		public String colocStackToText() {
+			StringBuilder colocStackText = new StringBuilder();
+			colocStackText.append("Colocalization matrix for X:" + i1Title + " vs Y:" + i2Title +
+			" and " + ch1Title + " vs " + ch2Title + "\n");
+			for (int i = 1; i <= nSlices; i++) {
+				colocStackText.append(String.format("Slice %d\n", i));
+				// first data row is the x axis for the pixel values) 0, 1, ..., 255
+				// Here the length is 257 because the first column is Y axis
+				String[] dataRow = new String[257];
+				dataRow[0] = "";
+				for (int x = 0; x < 256; i++) {
+					dataRow[x + 1] = new Integer(x).toString();
+				}
+				colocStackText.append(String.join("\t", dataRow) + "\n");
+				// Now go through the slice but adding
+				for (int y = 0; y < 256; y++) {
+					dataRow = new String[257];
+					dataRow[0] = new Integer(y).toString();
+					for (int x = 0; x < 256; x++) {
+						dataRow[x + 1] = new Float(colocStack.getProcessor(i).getPixel(x, y)).toString();
+					}
+					colocStackText.append(String.join("\t", dataRow) + "\n");
+				}
+				colocStackText.append("\n");
+
+			}
+			return colocStackText.toString();
+		}
+
+		public void saveResult(File pathToFolder) {
+			// Save result in the subdirectory where the image or directroy with 
+			// images is located
 		}
 	}
 }
