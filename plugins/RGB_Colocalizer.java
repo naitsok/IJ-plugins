@@ -23,7 +23,6 @@
 
 import java.awt.*;
 import java.awt.event.*;
-import java.applet.*;
 import java.io.*;
 import java.util.*;
 import ij.plugin.frame.*;
@@ -42,29 +41,41 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 	// Three channle colocalization is the colocalization of Blue channel (typically DAPI)
 	// and the result of colocalization of Red and Green channels
 
+	// Loading plugin configuration from an external file
+	private String configFileName = "RGB_Colocalizer.cfg";
+	private File configFile = new File(new File(System.getProperty("user.dir"), "plugins"), configFileName);
+
 	// Image stacks and images slices
-	private ImageStack iStackR, iStackG, iStackB;
+	// private ImageStack iStackR, iStackG, iStackB;
 	private ImagePlus iR, iG, iB;
-	private ImageStatistics iStats;
+	// private ImageStatistics iStats;
 
 	// Colocolization images for each pair of channels
-	private ImagePlus iRvsG, iRvsB, iGvsB;
+	// private ImagePlus iRvsG, iRvsB, iGvsB;
 	
-	// Titles if images
+	// Titles of images
 	private String[] titles;
 
-	// If true displays color coded colocolization plot
+	// If true displays color coded colocalization plot
+	private String configColorColoc = "show_color_coded_colocalization_plot";
 	private boolean showColorColoc = false;
 
 	// If true displays intensity coded colocolization plot in logarithmic scale
+	private String configIntensityColoc = "show_intensity_coded_colocalization_plot";
 	private boolean showIntensityColoc = false;
 
 	// If true displays all the channels in one row
 	// If false, channels go in rows one after another
+	private String configChannelsInOneRow = "show_channels_in_one_row";
 	private boolean showChannelsInOneRow = true;
 
 	// If true displays colocalized image
+	private String configColocImage = "show_colocalized_image";
 	private boolean showColocImage = false;
+
+	// If true, for the blue channel (DAPI/Hoechst 33342 stained nuclei) creates mask of cell nuclei using "Analyze particles" functionaloty of ImageJ
+	private String configNucleiBlueMask = "blue_channel_to_nuclei_mask";
+	private boolean nucleiBlueMask = false;
 
 	// Dialog to select experiment type: analyze channels separately, analyze one 3 channel image, or analyze directory with 3 channel images
 	private GenericDialog gdChooseAnalysis;
@@ -76,6 +87,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 	private GenericDialog gdAnalysis;
 
 	// Thresholds
+	private String configRedThres = "red_threshold", configGreenThres = "green_threshold", configBlueThres = "blue_threshold";
 	private int redThres = 75, greenThres = 75, blueThres = 75;
 	private Button btnAutoThresSeparateChannels;
 	private Button btnAutoThresOne3Channel;
@@ -92,19 +104,24 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 
 	// Results
 	private String resultsTitle = "Image titles for colocalization\tSlice #\tCh1 vs Ch2\tCh1 pixels\tCh2 pixels\tColoc pixels\tPercent Ch1\tPercent Ch2\tPercent Coloc\tCh1 Overlap Ch2\tCh2 Overlap Ch1\t";
-	private String rgTitle = "%s vs %s\tRed pixels\tGreen pixels\tColoc pixels\tPerc Red\tPerc Green\tPerc Coloc\tRed Overlap Green\tGreen Overlap Red\t";
-	private String rbTitle = "%s vs %s\tRed pixels\tBlue pixels\tColoc pixels\tPerc Red\tPerc Blue\tPerc Coloc\tRed Overlap Blue\tBlue Overlap Red\t";
-	private String gbTitle = "%s vs %s\tGreen pixels\tBlue pixels\tColoc pixels\tPerc Green\tPerc Blue\tPerc Coloc\tGreen Overlap Blue\tBlue Overlap Green\t";
-	private String allChTitle = "%s vs %s\tBlue pixels\tGreen/Red pixels\tColoc pixels\tPerc Blue\tPerc Green/Red\tPerc Coloc\tBlue Overlap Green/Red\tGreen/Red Overlap Blue\t";
+	// private String rgTitle = "%s vs %s\tRed pixels\tGreen pixels\tColoc pixels\tPerc Red\tPerc Green\tPerc Coloc\tRed Overlap Green\tGreen Overlap Red\t";
+	// private String rbTitle = "%s vs %s\tRed pixels\tBlue pixels\tColoc pixels\tPerc Red\tPerc Blue\tPerc Coloc\tRed Overlap Blue\tBlue Overlap Red\t";
+	// private String gbTitle = "%s vs %s\tGreen pixels\tBlue pixels\tColoc pixels\tPerc Green\tPerc Blue\tPerc Coloc\tGreen Overlap Blue\tBlue Overlap Green\t";
+	// private String allChTitle = "%s vs %s\tBlue pixels\tGreen/Red pixels\tColoc pixels\tPerc Blue\tPerc Green/Red\tPerc Coloc\tBlue Overlap Green/Red\tGreen/Red Overlap Blue\t";
 	private String dataFormat = "%s\t%d\t%s\t%d\t%d\t%d\t%.3f\t%.3f\t%.3f\t%.5f\t%.5f\t";
 	private String final2ChResutsTitle = "";
 	private ArrayList<String> allLst2ChResults = new ArrayList<String>();
 	private ArrayList<String> allLst3ChResults = new ArrayList<String>();
 
-	public void run(String arg) {
+	
 
+	public void run(String arg) {
+		// load config if it is available
+		readConfig();
+		
 		// Create and show dialog to select experiment type.
-		gdChooseAnalysis = new GenericDialog("RGB Image Correlator");
+		// IJ.showMessage("My_Plugin", configFile.getPath());
+		gdChooseAnalysis = new GenericDialog("RGB Image Colocalizer");
 		gdChooseAnalysis.setLayout(new GridLayout(4, 1, 5, 5));
 		btnSeparateChannels = new Button("Analyze channels separately");
         btnSeparateChannels.addActionListener(this);
@@ -118,7 +135,6 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		gdChooseAnalysis.showDialog();
 		if (gdChooseAnalysis.wasCanceled())
 			return;
-		// IJ.showMessage("My_Plugin","Hello world!");
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -151,7 +167,46 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			blueThres = this.getAutoThres(choice, 2, tfBlueThres);
 		}
 
+		writeConfig();
 		return;
+	}
+
+	private void readConfig() {
+		try {
+			FileReader configReader = new FileReader(configFile);
+			Properties config = new Properties();
+			config.load(configReader);
+			showColorColoc = Boolean.parseBoolean(config.getProperty(configColorColoc));
+			showIntensityColoc = Boolean.parseBoolean(config.getProperty(configIntensityColoc));
+			showChannelsInOneRow = Boolean.parseBoolean(config.getProperty(configChannelsInOneRow));
+			showColocImage = Boolean.parseBoolean(config.getProperty(configColocImage));
+			nucleiBlueMask = Boolean.parseBoolean(config.getProperty(configNucleiBlueMask));
+			redThres = Integer.parseInt(config.getProperty(configRedThres));
+			greenThres = Integer.parseInt(config.getProperty(configGreenThres));
+			blueThres = Integer.parseInt(config.getProperty(configBlueThres));
+			configReader.close();
+		}
+		catch (FileNotFoundException ex) { /* No config file found, will create a new one automatically. */ }
+		catch (IOException ex) { /* Config file could not be read, will rewrite with a new one automatically. */ }
+	}
+
+	private void writeConfig() {
+		try {
+			Properties config = new Properties();
+			config.setProperty(configColorColoc, new Boolean(showColorColoc).toString());
+			config.setProperty(configIntensityColoc, new Boolean(showIntensityColoc).toString());
+			config.setProperty(configChannelsInOneRow, new Boolean(showChannelsInOneRow).toString());
+			config.setProperty(configColocImage, new Boolean(showColocImage).toString());
+			config.setProperty(configNucleiBlueMask, new Boolean(nucleiBlueMask).toString());
+			config.setProperty(configRedThres, new Integer(redThres).toString());
+			config.setProperty(configGreenThres, new Integer(greenThres).toString());
+			config.setProperty(configBlueThres, new Integer(blueThres).toString());
+
+			FileWriter configWriter = new FileWriter(configFile);
+			config.store(configWriter, configFileName);
+			configWriter.close();
+		}
+		catch (IOException ex) {}
 	}
 
 	private void analyze() {
@@ -270,7 +325,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			return false;
 
 		// Get images and their titles
-		String tempTitle = "";
+		// String tempTitle = "";
 		int idxR = gdAnalysis.getNextChoiceIndex();
 		if (idxR > 0) { iR = to8bitChannel(WindowManager.getImage(wList[idxR - 1]), 0); } else { iR = null; }
 		int idxG = gdAnalysis.getNextChoiceIndex();
@@ -357,7 +412,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			return false;
 
 		// Get images and their titles
-		String tempTitle = "";
+		// String tempTitle = "";
 		int idxImage = gdAnalysis.getNextChoiceIndex();
 		iR = to8bitChannel(WindowManager.getImage(wList[idxImage]), 0);
 		iG = to8bitChannel(WindowManager.getImage(wList[idxImage]), 1);
