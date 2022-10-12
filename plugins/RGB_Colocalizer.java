@@ -43,7 +43,10 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 
 	// Loading plugin configuration from an external file
 	private String configFileName = "RGB_Colocalizer.cfg";
-	private File configFile = new File(new File(System.getProperty("user.dir"), "plugins"), configFileName);
+	private File configFile = new File(new File(System.getProperty("user.dir"), "plugins")., configFileName);
+
+	// Subfolder of an image folder to save the results of ananlysis
+	private String subFolder = "analysis_results";
 
 	// Image stacks and images slices
 	// private ImageStack iStackR, iStackG, iStackB;
@@ -780,6 +783,8 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		
 		// Titles of colocalized images
 		public String i1Title, i2Title;
+		// Get paths of images to be colocalized
+		public String i1Path, i2Path;
 		// Titles of channels to colocalize
 		public String ch1Title, ch2Title;
 		// Thresholds for channels to colocalize
@@ -827,6 +832,8 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			// numSlices is number of slices in the images
 			i1Title = img1.getTitle();
 			i2Title = img2.getTitle();
+			i1Path = img1.getFileInfo().getFilePath();
+			i2Path = img2.getFileInfo().getFilePath();
 			ch1Title = chan1Title;
 			ch2Title = chan2Title;
 			ch1Thres = chan1Thres;
@@ -902,9 +909,50 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			return colocStackText.toString();
 		}
 
-		public void saveResult(File pathToFolder) {
+		public void saveResult(String analysisFolderName) {
 			// Save result in the subdirectory where the image or directroy with 
-			// images is located
+			// images is located. If images are located in the different folders
+			// then saves the reults in both of the folders.
+			File analysisFolder1 = new File(new File(i1Path).getParent(), analysisFolderName);
+			File analysisFolder2 = new File(new File(i2Path).getParent(), analysisFolderName);
+			if (!analysisFolder1.exists()) {
+				analysisFolder1.mkdir();
+			}
+			if (!analysisFolder2.exists()) {
+				analysisFolder2.mkdir();
+			}
+			// Save analysis metadata
+			StringBuilder metadata = new StringBuilder();
+			metadata.append("Image 1 information\n");
+			metadata.append("Name:\t" + i1Title + "\n");
+			metadata.append("Path:\t" + i1Path + "\n");
+			metadata.append("Channel:\t" + ch1Title + "\n");
+			metadata.append("Threshold:\t" + new Integer(ch1Thres).toString() + "\n");
+			metadata.append("Mask used:\t" + "\n");
+			metadata.append("Particle size:\t" + "\n");
+			metadata.append("\n");
+			metadata.append("Image 2 information\n");
+			metadata.append("Name:\t" + i2Title + "\n");
+			metadata.append("Path:\t" + i2Path + "\n");
+			metadata.append("Channel:\t" + ch2Title + "\n");
+			metadata.append("Threshold:\t" + new Integer(ch2Thres).toString() + "\n");
+			metadata.append("Mask used:\t" + "\n");
+			metadata.append("Particle size:\t" + "\n");
+
+			String metadataFileName = "Metadata_" + i1Title + "_vs_" + i2Title + ".txt";
+			String matrixFileName = "Matrix_" + i1Title + "_vs_" + i2Title + ".txt";
+			FileWriter fileToWrite = new FileWriter(new File(analysisFolder1, metadataFileName));
+			fileToWrite.write(metadata.toString());
+			fileToWrite.close();
+			fileToWrite = new FileWriter(new File(analysisFolder1, matrixFileName));
+			fileToWrite.write(colocStackToText());
+			fileToWrite.close();
+			fileToWrite = new FileWriter(new File(analysisFolder2, metadataFileName));
+			fileToWrite.write(metadata.toString());
+			fileToWrite.close();
+			fileToWrite = new FileWriter(new File(analysisFolder2, matrixFileName));
+			fileToWrite.write(colocStackToText());
+			fileToWrite.close();
 		}
 	}
 }
