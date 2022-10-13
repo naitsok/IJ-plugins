@@ -890,47 +890,36 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			return arrResult;
 		}
 
-		public String colocStackToText() {
-			StringBuilder colocStackText = new StringBuilder();
-			colocStackText.append("Colocalization matrix for X:" + i1Title + " vs Y:" + i2Title +
+		public StringBuilder colocStackToSBuilder() {
+			StringBuilder colocStackSB = new StringBuilder();
+			colocStackSB.append("Colocalization matrix for X:" + i1Title + " vs Y:" + i2Title +
 			" and " + ch1Title + " vs " + ch2Title + "\n");
 			for (int i = 1; i <= nSlices; i++) {
-				colocStackText.append(String.format("Slice %d\n", i));
+				colocStackSB.append(String.format("Slice %d\n", i));
 				// first data row is the x axis for the pixel values) 0, 1, ..., 255
 				// Here the length is 257 because the first column is Y axis
 				String[] dataRow = new String[257];
 				dataRow[0] = "";
 				for (int x = 0; x < 256; x++) {
-					dataRow[x + 1] = new Integer(255 - x).toString();
+					dataRow[x + 1] = new Integer(x).toString();
 				}
-				colocStackText.append(String.join("\t", dataRow) + "\n");
+				colocStackSB.append(String.join("\t", dataRow) + "\n");
 				// Now go through the slice but adding
 				for (int y = 0; y < 256; y++) {
 					dataRow = new String[257];
 					dataRow[0] = new Integer(y).toString();
 					for (int x = 0; x < 256; x++) {
-						dataRow[x + 1] = new Float((int)colocStack.getProcessor(i).getf(y, x) + 1).toString();
+						dataRow[x + 1] = new Float((int)colocStack.getProcessor(i).getf(y, 255 - x) + 1).toString();
 					}
-					colocStackText.append(String.join("\t", dataRow) + "\n");
+					colocStackSB.append(String.join("\t", dataRow) + "\n");
 				}
-				colocStackText.append("\n");
+				colocStackSB.append("\n");
 
 			}
-			return colocStackText.toString();
+			return colocStackSB;
 		}
 
 		public void saveResult(String analysisFolderName) {
-			// Save result in the subdirectory where the image or directroy with 
-			// images is located. If images are located in the different folders
-			// then saves the reults in both of the folders.
-			File analysisFolder1 = new File(new File(i1Path).getParent(), analysisFolderName);
-			File analysisFolder2 = new File(new File(i2Path).getParent(), analysisFolderName);
-			if (!analysisFolder1.exists()) {
-				analysisFolder1.mkdir();
-			}
-			if (!analysisFolder2.exists()) {
-				analysisFolder2.mkdir();
-			}
 			// Save analysis metadata
 			StringBuilder metadata = new StringBuilder();
 			metadata.append("Image 1 information\n");
@@ -948,26 +937,46 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			metadata.append("Threshold:\t" + new Integer(ch2Thres).toString() + "\n");
 			metadata.append("Mask used:\t" + "\n");
 			metadata.append("Particle size:\t" + "\n");
+			// Save colocalization matrix
+			StringBuilder colocMatrix = colocStackToSBuilder();
 
 			String metadataFileName = "Metadata_" + i1Title + "_vs_" + i2Title + ".txt";
 			String matrixFileName = "Matrix_" + i1Title + "_vs_" + i2Title + ".txt";
-			try {
-				OutputStreamWriter fileToWrite = new OutputStreamWriter(new FileOutputStream(new File(analysisFolder1, metadataFileName)), StandardCharsets.UTF_8);
-				fileToWrite.write(metadata.toString());
-				fileToWrite.close();
-				fileToWrite =  new OutputStreamWriter(new FileOutputStream(new File(analysisFolder1, matrixFileName)), StandardCharsets.UTF_8);
-				fileToWrite.write(colocStackToText());
-				fileToWrite.close();
-				fileToWrite =  new OutputStreamWriter(new FileOutputStream(new File(analysisFolder2, metadataFileName)), StandardCharsets.UTF_8);
-				fileToWrite.write(metadata.toString());
-				fileToWrite.close();
-				fileToWrite =  new OutputStreamWriter(new FileOutputStream(new File(analysisFolder2, matrixFileName)), StandardCharsets.UTF_8);
-				fileToWrite.write(colocStackToText());
-				fileToWrite.close();
-			} catch (IOException ex) {
-				IJ.showMessage("Error occured! " + ex.getMessage());
+
+			// Save result in the subdirectory where the image or directroy with 
+			// images is located. If images are located in the different folders
+			// then saves the reults in both of the folders.
+			if (i1Path != null && i1Path.length() > 0) {
+				File analysisFolder1 = new File(new File(i1Path).getParent(), analysisFolderName);
+				if (!analysisFolder1.exists()) {						analysisFolder1.mkdir();
+				}
+				try {
+					OutputStreamWriter fileToWrite = new OutputStreamWriter(new FileOutputStream(new File(analysisFolder1, metadataFileName)), StandardCharsets.UTF_8);
+					fileToWrite.write(metadata.toString());
+					fileToWrite.close();
+					fileToWrite =  new OutputStreamWriter(new FileOutputStream(new File(analysisFolder1, matrixFileName)), StandardCharsets.UTF_8);
+					fileToWrite.write(colocMatrix.toString());
+					fileToWrite.close();
+				} catch (IOException ex) {
+					IJ.showMessage("Error!", ex.getMessage());
+				}
 			}
-			
+			if (i2Path != null && i2Path.length() > 0) {
+				File analysisFolder2 = new File(new File(i2Path).getParent(), analysisFolderName);
+				if (!analysisFolder2.exists()) {
+					analysisFolder2.mkdir();
+				}
+				try {
+					OutputStreamWriter fileToWrite =  new OutputStreamWriter(new FileOutputStream(new File(analysisFolder2, metadataFileName)), StandardCharsets.UTF_8);
+					fileToWrite.write(metadata.toString());
+					fileToWrite.close();
+					fileToWrite =  new OutputStreamWriter(new FileOutputStream(new File(analysisFolder2, matrixFileName)), StandardCharsets.UTF_8);
+					fileToWrite.write(colocMatrix.toString());
+					fileToWrite.close();
+				} catch (IOException ex) {
+					IJ.showMessage("Error!", ex.getMessage());
+				}
+			}
 		}
 	}
 }
