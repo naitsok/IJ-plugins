@@ -24,10 +24,13 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import ij.plugin.frame.*;
 import ij.*;
 import ij.gui.*;
+import ij.io.FileInfo;
 import ij.process.*;
 import ij.text.*;
 import ij.plugin.*;
@@ -43,7 +46,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 
 	// Loading plugin configuration from an external file
 	private String configFileName = "RGB_Colocalizer.cfg";
-	private File configFile = new File(new File(System.getProperty("user.dir"), "plugins")., configFileName);
+	private File configFile = new File(new File(System.getProperty("user.dir"), "plugins"), configFileName);
 
 	// Subfolder of an image folder to save the results of ananlysis
 	private String subFolder = "analysis_results";
@@ -222,15 +225,18 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			result = colocalize(iR, iB, redThres, blueThres, RED, BLUE, "Red", "Blue");
 			lst2ChResults = this.appendResults(lst2ChResults, result.summaryToTextRows(dataFormat), showChannelsInOneRow);
 			if (showChannelsInOneRow) final2ChResutsTitle = final2ChResutsTitle + resultsTitle;
+			result.saveResult(subFolder);
 		}
 		if (iG != null && iB != null) {
 			result = colocalize(iG, iB, greenThres, blueThres, GREEN, BLUE, "Green", "Blue");
 			lst2ChResults = this.appendResults(lst2ChResults, result.summaryToTextRows(dataFormat), showChannelsInOneRow);
 			if (showChannelsInOneRow) final2ChResutsTitle = final2ChResutsTitle + resultsTitle;
+			result.saveResult(subFolder);
 		}
 		if (iR != null && iG != null) {
 			result = colocalize(iR, iG, redThres, greenThres, RED, GREEN, "Red", "Green");
 			lst2ChResults = this.appendResults(lst2ChResults, result.summaryToTextRows(dataFormat), showChannelsInOneRow);
+			result.saveResult(subFolder);
 		}
 		allLst2ChResults.addAll(lst2ChResults);
 		
@@ -239,6 +245,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		if (iR != null && iG != null && iB != null) {
 			showColorColoc = false; showIntensityColoc = false; // does not make sense because Greed/Red coloc image is mask
 			result = colocalize(iB, new ImagePlus("Colocalized Red and Green channels", result.iCh1vsCh2Stack), blueThres, 100, BLUE, ORANGE, "Blue", "Red/Green colocalized");
+			result.saveResult(subFolder);
 		}
 		Collections.addAll(allLst3ChResults, result.summaryToTextRows(dataFormat));
 
@@ -763,15 +770,18 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 	public ImagePlus to8bitChannel(ImagePlus image, int channel) {
 		// Gets specified channel from image
 		String tempTitle = image.getTitle();
+		FileInfo imageInfo = image.getOriginalFileInfo();
 		if (image.getType() == ImagePlus.COLOR_RGB) {
 			image = ChannelSplitter.split(image)[channel];
 			image.setTitle(tempTitle);
+			image.setFileInfo(imageInfo);
 			return image;
 		}
 		
 		if (image.getType() != ImagePlus.GRAY8) {
 			ImageConverter ic = new ImageConverter(image);
 			ic.convertToGray8();
+			image.setFileInfo(imageInfo);
 			return image;
 		}
 
@@ -832,8 +842,8 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			// numSlices is number of slices in the images
 			i1Title = img1.getTitle();
 			i2Title = img2.getTitle();
-			i1Path = img1.getFileInfo().getFilePath();
-			i2Path = img2.getFileInfo().getFilePath();
+			i1Path = img1.getOriginalFileInfo().getFilePath();
+			i2Path = img2.getOriginalFileInfo().getFilePath();
 			ch1Title = chan1Title;
 			ch2Title = chan2Title;
 			ch1Thres = chan1Thres;
@@ -890,8 +900,8 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 				// Here the length is 257 because the first column is Y axis
 				String[] dataRow = new String[257];
 				dataRow[0] = "";
-				for (int x = 0; x < 256; i++) {
-					dataRow[x + 1] = new Integer(x).toString();
+				for (int x = 0; x < 256; x++) {
+					dataRow[x + 1] = new Integer(255 - x).toString();
 				}
 				colocStackText.append(String.join("\t", dataRow) + "\n");
 				// Now go through the slice but adding
@@ -899,7 +909,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 					dataRow = new String[257];
 					dataRow[0] = new Integer(y).toString();
 					for (int x = 0; x < 256; x++) {
-						dataRow[x + 1] = new Float(colocStack.getProcessor(i).getPixel(x, y)).toString();
+						dataRow[x + 1] = new Float((int)colocStack.getProcessor(i).getf(y, x) + 1).toString();
 					}
 					colocStackText.append(String.join("\t", dataRow) + "\n");
 				}
@@ -941,18 +951,23 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 
 			String metadataFileName = "Metadata_" + i1Title + "_vs_" + i2Title + ".txt";
 			String matrixFileName = "Matrix_" + i1Title + "_vs_" + i2Title + ".txt";
-			FileWriter fileToWrite = new FileWriter(new File(analysisFolder1, metadataFileName));
-			fileToWrite.write(metadata.toString());
-			fileToWrite.close();
-			fileToWrite = new FileWriter(new File(analysisFolder1, matrixFileName));
-			fileToWrite.write(colocStackToText());
-			fileToWrite.close();
-			fileToWrite = new FileWriter(new File(analysisFolder2, metadataFileName));
-			fileToWrite.write(metadata.toString());
-			fileToWrite.close();
-			fileToWrite = new FileWriter(new File(analysisFolder2, matrixFileName));
-			fileToWrite.write(colocStackToText());
-			fileToWrite.close();
+			try {
+				OutputStreamWriter fileToWrite = new OutputStreamWriter(new FileOutputStream(new File(analysisFolder1, metadataFileName)), StandardCharsets.UTF_8);
+				fileToWrite.write(metadata.toString());
+				fileToWrite.close();
+				fileToWrite =  new OutputStreamWriter(new FileOutputStream(new File(analysisFolder1, matrixFileName)), StandardCharsets.UTF_8);
+				fileToWrite.write(colocStackToText());
+				fileToWrite.close();
+				fileToWrite =  new OutputStreamWriter(new FileOutputStream(new File(analysisFolder2, metadataFileName)), StandardCharsets.UTF_8);
+				fileToWrite.write(metadata.toString());
+				fileToWrite.close();
+				fileToWrite =  new OutputStreamWriter(new FileOutputStream(new File(analysisFolder2, matrixFileName)), StandardCharsets.UTF_8);
+				fileToWrite.write(colocStackToText());
+				fileToWrite.close();
+			} catch (IOException ex) {
+				IJ.showMessage("Error occured! " + ex.getMessage());
+			}
+			
 		}
 	}
 }
