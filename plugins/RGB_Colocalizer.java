@@ -49,15 +49,11 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 	private File configFile = new File(new File(System.getProperty("user.dir"), "plugins"), configFileName);
 
 	// Subfolder of an image folder to save the results of ananlysis
-	private String subFolder = "analysis_results";
+	private String subFolder = "colocalization_results";
 
 	// Image stacks and images slices
 	// private ImageStack iStackR, iStackG, iStackB;
 	private ImagePlus iR, iG, iB;
-	// private ImageStatistics iStats;
-
-	// Colocolization images for each pair of channels
-	// private ImagePlus iRvsG, iRvsB, iGvsB;
 	
 	// Titles of images
 	private String[] titles;
@@ -98,6 +94,20 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 	private Button btnAutoThresSeparateChannels;
 	private Button btnAutoThresOne3Channel;
 	private TextField tfRedThres, tfGreenThres, tfBlueThres;
+
+	// Analyze particles in each channel to e.g. mask cell nuclei
+	// If each channel needs to be transferred to mask
+	// using analyze particles function
+	private boolean redAnalPart = false, greenAnalPart = false, blueAnalPart = false;
+	// config string to contain these properties 
+	private String configRedAnalPart = "red_analyze_particles";
+	private String configGreenAnalPart = "green_analyze_particles";
+	private String configBlueAnalPart = "blue_analyze_particles";
+	// minimum sizes in pixel for analyze particles
+	private String redPartSize = "100", greenPartSize = "100", bluePartSize = "100";
+	private String configRedPartSize = "red_particle_size";
+	private String configGreenPartSize = "green_particle_size";
+	private String configBluePartSize = "blue_particle_size";
 
 	// Colors for plotting
 	private static int WHITE = 0xFFFFFF;
@@ -190,6 +200,12 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			redThres = Integer.parseInt(config.getProperty(configRedThres));
 			greenThres = Integer.parseInt(config.getProperty(configGreenThres));
 			blueThres = Integer.parseInt(config.getProperty(configBlueThres));
+			redAnalPart = Boolean.parseBoolean(config.getProperty(configRedAnalPart));
+			redPartSize = config.getProperty(configRedPartSize);
+			greenAnalPart = Boolean.parseBoolean(config.getProperty(configGreenAnalPart));
+			greenPartSize = config.getProperty(greenPartSize);
+			blueAnalPart = Boolean.parseBoolean(config.getProperty(configBlueAnalPart));
+			bluePartSize = config.getProperty(configBluePartSize);
 			configReader.close();
 		}
 		catch (FileNotFoundException ex) { /* No config file found, will create a new one automatically. */ }
@@ -207,7 +223,12 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			config.setProperty(configRedThres, new Integer(redThres).toString());
 			config.setProperty(configGreenThres, new Integer(greenThres).toString());
 			config.setProperty(configBlueThres, new Integer(blueThres).toString());
-
+			config.setProperty(configRedAnalPart, new Boolean(redAnalPart).toString());
+			config.setProperty(configRedPartSize, redPartSize);
+			config.setProperty(configGreenAnalPart, new Boolean(greenAnalPart).toString());
+			config.setProperty(configGreenPartSize, greenPartSize);
+			config.setProperty(configBlueAnalPart, new Boolean(blueAnalPart).toString());
+			config.setProperty(configBluePartSize, bluePartSize);
 			FileWriter configWriter = new FileWriter(configFile);
 			config.store(configWriter, configFileName);
 			configWriter.close();
@@ -244,7 +265,8 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		// result variable now contains colocalization of Red and Green channels
 		if (iR != null && iG != null && iB != null) {
 			showColorColoc = false; showIntensityColoc = false; // does not make sense because Greed/Red coloc image is mask
-			result = colocalize(iB, new ImagePlus("Colocalized Red and Green channels", result.iCh1vsCh2Stack), blueThres, 100, BLUE, ORANGE, "Blue", "Red/Green colocalized");
+			ImagePlus iRxB = new ImagePlus("Colocalized_Red_and_Green_channels", result.iCh1vsCh2Stack);
+			result = colocalize(iB, iRxB, blueThres, 100, BLUE, ORANGE, "Blue", "Red+Green_colocalized");
 			result.saveResult(subFolder);
 		}
 		Collections.addAll(allLst3ChResults, result.summaryToTextRows(dataFormat));
@@ -568,9 +590,9 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 				" are not of the same pixel size!");
 			return null;
 		}
-
+		
 		ColocResult result = new ColocResult(img1, img2, ch1Title, ch2Title, thres1, thres2, stackSize);
-
+		
 		// Image processors for images and correlation graphs for each image in the stack
 		ImageProcessor img1Proc = null, img2Proc = null;
 		ImageProcessor colocProc = null;
@@ -794,7 +816,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		// Titles of colocalized images
 		public String i1Title, i2Title;
 		// Get paths of images to be colocalized
-		public String i1Path, i2Path;
+		public String i1Path = "", i2Path = "";
 		// Titles of channels to colocalize
 		public String ch1Title, ch2Title;
 		// Thresholds for channels to colocalize
@@ -842,8 +864,15 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			// numSlices is number of slices in the images
 			i1Title = img1.getTitle();
 			i2Title = img2.getTitle();
-			i1Path = img1.getOriginalFileInfo().getFilePath();
-			i2Path = img2.getOriginalFileInfo().getFilePath();
+			FileInfo fileInfo = null;
+			fileInfo = img1.getOriginalFileInfo();
+			if (fileInfo != null) {
+				i1Path = fileInfo.getFilePath();
+			}
+			fileInfo = img2.getOriginalFileInfo();
+			if (fileInfo != null) {
+				i2Path = fileInfo.getFilePath();
+			}
 			ch1Title = chan1Title;
 			ch2Title = chan2Title;
 			ch1Thres = chan1Thres;
@@ -940,15 +969,16 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			// Save colocalization matrix
 			StringBuilder colocMatrix = colocStackToSBuilder();
 
-			String metadataFileName = "Metadata_" + i1Title + "_vs_" + i2Title + ".txt";
-			String matrixFileName = "Matrix_" + i1Title + "_vs_" + i2Title + ".txt";
+			String metadataFileName = "Metadata_" + i1Title + "_vs_" + i2Title + "__" + ch1Title + "_vs_" +ch2Title + ".txt";
+			String matrixFileName = "Matrix_" + i1Title + "_vs_" + i2Title + "__" + ch1Title + "_vs_" +ch2Title + ".txt";
 
 			// Save result in the subdirectory where the image or directroy with 
 			// images is located. If images are located in the different folders
 			// then saves the reults in both of the folders.
 			if (i1Path != null && i1Path.length() > 0) {
 				File analysisFolder1 = new File(new File(i1Path).getParent(), analysisFolderName);
-				if (!analysisFolder1.exists()) {						analysisFolder1.mkdir();
+				if (!analysisFolder1.exists()) {
+					analysisFolder1.mkdir();
 				}
 				try {
 					OutputStreamWriter fileToWrite = new OutputStreamWriter(new FileOutputStream(new File(analysisFolder1, metadataFileName)), StandardCharsets.UTF_8);
