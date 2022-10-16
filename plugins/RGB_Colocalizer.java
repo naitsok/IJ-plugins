@@ -98,16 +98,23 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 	// Analyze particles in each channel to e.g. mask cell nuclei
 	// If each channel needs to be transferred to mask
 	// using analyze particles function
-	private boolean redAnalPart = false, greenAnalPart = false, blueAnalPart = false;
+	private boolean redAnalPart = false, greenAnalPart = false, blueAnalPart = true;
 	// config string to contain these properties 
 	private String configRedAnalPart = "red_analyze_particles";
 	private String configGreenAnalPart = "green_analyze_particles";
 	private String configBlueAnalPart = "blue_analyze_particles";
 	// minimum sizes in pixel for analyze particles
-	private String redPartSize = "100", greenPartSize = "100", bluePartSize = "100";
+	private String redPartSize = "100-Infinity", greenPartSize = "100-Infinity", bluePartSize = "100-Infinity";
 	private String configRedPartSize = "red_particle_size";
 	private String configGreenPartSize = "green_particle_size";
 	private String configBluePartSize = "blue_particle_size";
+	private TextField tfRedPartSize, tfGreenPartSize, tfBluePartSize;
+	// Circularities of the particles
+	private String redPartCirc = "0.00-1.00", greenPartCirc = "0.00-1.00", bluePartCirc = "0.00-1.00";
+	private String configRedPartCirc = "red_particle_circularity";
+	private String configGreenPartCirc = "green_particle_circularity";
+	private String configBluePartCirc = "blue_particle_circularity";
+	private TextField tfRedPartCirc, tfGreenPartCirc, tfBluePartCirc;
 
 	// Colors for plotting
 	private static int WHITE = 0xFFFFFF;
@@ -206,6 +213,9 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			greenPartSize = config.getProperty(greenPartSize);
 			blueAnalPart = Boolean.parseBoolean(config.getProperty(configBlueAnalPart));
 			bluePartSize = config.getProperty(configBluePartSize);
+			redPartCirc = config.getProperty(configRedPartCirc);
+			greenPartCirc = config.getProperty(configGreenPartCirc);
+			bluePartCirc = config.getProperty(configBluePartCirc);
 			configReader.close();
 		}
 		catch (FileNotFoundException ex) { /* No config file found, will create a new one automatically. */ }
@@ -229,6 +239,9 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			config.setProperty(configGreenPartSize, greenPartSize);
 			config.setProperty(configBlueAnalPart, new Boolean(blueAnalPart).toString());
 			config.setProperty(configBluePartSize, bluePartSize);
+			config.setProperty(configRedPartCirc, redPartCirc);
+			config.setProperty(configGreenPartCirc, greenPartCirc);
+			config.setProperty(configBluePartCirc, bluePartCirc);
 			FileWriter configWriter = new FileWriter(configFile);
 			config.store(configWriter, configFileName);
 			configWriter.close();
@@ -240,8 +253,29 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		// First do the colocalization for each pair of channels if images are existing
 		final2ChResutsTitle = resultsTitle;
 		ArrayList<String> lst2ChResults = new ArrayList<String>();
-		ColocResult result = null;	
-		
+		ColocResult result = null;
+
+		// Convert to masks and analyze particles if selected
+		if (redAnalPart) {
+			IJ.setThreshold(iR, redThres, 255);
+			IJ.run(iR, "Convert to Mask", "");
+			IJ.run(iR, "Analyze Particles...", "size=" + redPartSize + " pixel circularity=" + redPartCirc + " show=Nothing");
+			showColorColoc = false; showIntensityColoc = false; // does not make sense
+		}
+		if (greenAnalPart) {
+			IJ.setThreshold(iG, greenThres, 255);
+			IJ.run(iG, "Convert to Mask", "");
+			IJ.run(iG, "Analyze Particles...", "size=" + greenPartSize + " pixel circularity=" + greenPartCirc + " show=Nothing");
+			showColorColoc = false; showIntensityColoc = false; // does not make sense
+		}
+		if (blueAnalPart) {
+			IJ.setThreshold(iB, blueThres, 255);
+			IJ.run(iB, "Convert to Mask", "");
+			IJ.run(iB, "Analyze Particles...", "size=" + bluePartSize + " pixel circularity=" + bluePartCirc + " show=Nothing");
+			showColorColoc = false; showIntensityColoc = false; // does not make sense
+		}
+
+		// Perform colocalization
 		if (iR != null && iB != null) {
 			result = colocalize(iR, iB, redThres, blueThres, RED, BLUE, "Red", "Blue");
 			lst2ChResults = this.appendResults(lst2ChResults, result.summaryToTextRows(dataFormat), showChannelsInOneRow);
@@ -319,35 +353,60 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 
 		// Creating dialog to select images
 		gdAnalysis = new GenericDialog("RGB Image Correlator");
-		gdAnalysis.setLayout(new GridLayout(12, 2, 5, 5));
+		gdAnalysis.setLayout(new GridLayout(10, 4, 5, 5));
+
 		gdAnalysis.addChoice("Red Channel: ", titles, titles[1]);
-		gdAnalysis.addChoice("Green Channel: ", titles, titles.length > 2 ? titles[2] : titles[0]);
-		gdAnalysis.addChoice("Blue Channel: ", titles, titles.length > 3 ? titles[3] : titles[0]);
-
+		gdAnalysis.add(new Label("Red threshold (0-255):", Label.LEFT));
 		tfRedThres = new TextField("" + redThres, 4);
-        tfGreenThres = new TextField("" + greenThres, 4);
-        tfBlueThres = new TextField("" + blueThres, 4);
-		
-		gdAnalysis.add(new Label("Red fluorescense noise threshold (0-255):", Label.LEFT));
 		gdAnalysis.add(tfRedThres);
-		gdAnalysis.add(new Label("Green fluorescense noise threshold (0-255):", Label.LEFT));
-		gdAnalysis.add(tfGreenThres);
-		gdAnalysis.add(new Label("Blue fluorescense noise threshold (0-255):", Label.LEFT));
-		gdAnalysis.add(tfBlueThres);		
 
+		gdAnalysis.addChoice("Green Channel: ", titles, titles.length > 2 ? titles[2] : titles[0]);
+		gdAnalysis.add(new Label("Green threshold (0-255):", Label.LEFT));
+		tfGreenThres = new TextField("" + greenThres, 4);
+		gdAnalysis.add(tfGreenThres);
+
+		gdAnalysis.addChoice("Blue Channel: ", titles, titles.length > 3 ? titles[3] : titles[0]);
+		gdAnalysis.add(new Label("Blue threshold (0-255):", Label.LEFT));
+		tfBlueThres = new TextField("" + blueThres, 4);
+		gdAnalysis.add(tfBlueThres);	
+
+		gdAnalysis.add(new Label("")); // placeholder label
+		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.add(new Label("")); // placeholder label
 		btnAutoThresSeparateChannels = new Button("Auto threshold images");
         btnAutoThresSeparateChannels.addActionListener(this);
         gdAnalysis.add(btnAutoThresSeparateChannels);
+
+		// Analyze particles
+		gdAnalysis.addCheckbox("Red analyze particles, sizes (pixels^2):", redAnalPart);
+		tfRedPartSize = new TextField(redPartSize, 4);
+		gdAnalysis.add(tfRedPartSize);
+		gdAnalysis.add(new Label("Red circularity (0.00-1.00)"));
+		tfRedPartCirc = new TextField(redPartCirc, 2);
+		gdAnalysis.add(tfRedPartCirc);
+
+		gdAnalysis.addCheckbox("Green analyze particles, sizes (pixels^2):", redAnalPart);
+		tfGreenPartSize = new TextField(greenPartSize, 4);
+		gdAnalysis.add(tfGreenPartSize);
+		gdAnalysis.add(new Label("Green circularity (0.00-1.00)"));
+		tfGreenPartCirc = new TextField(greenPartCirc, 2);
+		gdAnalysis.add(tfGreenPartCirc);
+
+		gdAnalysis.addCheckbox("Blue analyze particles, size (pixels^2):", redAnalPart);
+		tfBluePartSize = new TextField(bluePartSize, 4);
+		gdAnalysis.add(tfBluePartSize);
+		gdAnalysis.add(new Label("Blue circularity (0.00-1.00)"));
+		tfBluePartCirc = new TextField(bluePartCirc, 2);
+		gdAnalysis.add(tfBluePartCirc);
 		
 		// Settings
+		gdAnalysis.add(new Label("General settings"));
+		gdAnalysis.add(new Label("")); // placeholder label
+		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.addCheckbox("Show color coded colocalization plot", showColorColoc); // NOTE: this plot is not reflecting true colocolization percentages for now
-		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.addCheckbox("Show logarithmic intensity colocalization plot", showIntensityColoc);
-		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.addCheckbox("Show colocalized image", showColocImage);
-		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.addCheckbox("Show data for all channels in one row", showChannelsInOneRow);
 		
 
@@ -370,7 +429,19 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		greenThres = Integer.parseInt(tfGreenThres.getText());
 		blueThres = Integer.parseInt(tfBlueThres.getText());
 
+		// Get analyze paricles sizes
+		redPartSize = tfRedPartSize.getText();
+		greenPartSize = tfGreenPartSize.getText();
+		bluePartSize = tfBluePartSize.getText();
+
+		redPartCirc = tfRedPartCirc.getText();
+		greenPartCirc = tfGreenPartCirc.getText();
+		bluePartCirc = tfBluePartCirc.getText();
+
 		// Get boolean values
+		redAnalPart = gdAnalysis.getNextBoolean();
+		greenAnalPart = gdAnalysis.getNextBoolean();
+		blueAnalPart = gdAnalysis.getNextBoolean();
 		showColorColoc = gdAnalysis.getNextBoolean();
 		showIntensityColoc = gdAnalysis.getNextBoolean();
 		showColocImage = gdAnalysis.getNextBoolean();
@@ -408,33 +479,60 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 
 		// Creating dialog to select images
 		gdAnalysis = new GenericDialog("RGB Image Correlator");
-		gdAnalysis.setLayout(new GridLayout(10, 2, 5, 5));
+		gdAnalysis.setLayout(new GridLayout(10, 4, 5, 5));
+
 		gdAnalysis.addChoice("3 channel image: ", titles, titles[0]);
-
+		gdAnalysis.add(new Label("Red threshold (0-255):", Label.LEFT));
 		tfRedThres = new TextField("" + redThres, 4);
-        tfGreenThres = new TextField("" + greenThres, 4);
-        tfBlueThres = new TextField("" + blueThres, 4);
-		
-		gdAnalysis.add(new Label("Red fluorescense noise threshold (0-255):", Label.LEFT));
 		gdAnalysis.add(tfRedThres);
-		gdAnalysis.add(new Label("Green fluorescense noise threshold (0-255):", Label.LEFT));
-		gdAnalysis.add(tfGreenThres);
-		gdAnalysis.add(new Label("Blue fluorescense noise threshold (0-255):", Label.LEFT));
-		gdAnalysis.add(tfBlueThres);		
 
+		gdAnalysis.add(new Label("")); gdAnalysis.add(new Label("")); // placeholder labels
+		gdAnalysis.add(new Label("Green threshold (0-255):", Label.LEFT));
+		tfGreenThres = new TextField("" + greenThres, 4);
+		gdAnalysis.add(tfGreenThres);
+
+		gdAnalysis.add(new Label("")); gdAnalysis.add(new Label("")); // placeholder labels
+		gdAnalysis.add(new Label("Blue threshold (0-255):", Label.LEFT));
+		tfBlueThres = new TextField("" + blueThres, 4);
+		gdAnalysis.add(tfBlueThres);	
+
+		gdAnalysis.add(new Label("")); // placeholder label
+		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.add(new Label("")); // placeholder label
 		btnAutoThresOne3Channel = new Button("Auto threshold image");
         btnAutoThresOne3Channel.addActionListener(this);
         gdAnalysis.add(btnAutoThresOne3Channel);
+
+		// Analyze particles
+		gdAnalysis.addCheckbox("Red analyze particles, sizes (pixels^2):", redAnalPart);
+		tfRedPartSize = new TextField(redPartSize, 4);
+		gdAnalysis.add(tfRedPartSize);
+		gdAnalysis.add(new Label("Red circularity (0.00-1.00)"));
+		tfRedPartCirc = new TextField(redPartCirc, 2);
+		gdAnalysis.add(tfRedPartCirc);
+
+		gdAnalysis.addCheckbox("Green analyze particles, sizes (pixels^2):", redAnalPart);
+		tfGreenPartSize = new TextField(greenPartSize, 4);
+		gdAnalysis.add(tfGreenPartSize);
+		gdAnalysis.add(new Label("Green circularity (0.00-1.00)"));
+		tfGreenPartCirc = new TextField(greenPartCirc, 2);
+		gdAnalysis.add(tfGreenPartCirc);
+
+		gdAnalysis.addCheckbox("Blue analyze particles, size (pixels^2):", redAnalPart);
+		tfBluePartSize = new TextField(bluePartSize, 4);
+		gdAnalysis.add(tfBluePartSize);
+		gdAnalysis.add(new Label("Blue circularity (0.00-1.00)"));
+		tfBluePartCirc = new TextField(bluePartCirc, 2);
+		gdAnalysis.add(tfBluePartCirc);
 		
 		// Settings
+		gdAnalysis.add(new Label("General settings"));
+		gdAnalysis.add(new Label("")); // placeholder label
+		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.addCheckbox("Show color coded colocalization plot", showColorColoc); // NOTE: this plot is not reflecting true colocolization percentages for now
-		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.addCheckbox("Show logarithmic intensity colocalization plot", showIntensityColoc);
-		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.addCheckbox("Show colocalized image", showColocImage);
-		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.addCheckbox("Show data for all channels in one row", showChannelsInOneRow);
 		
 
@@ -455,7 +553,19 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		greenThres = Integer.parseInt(tfGreenThres.getText());
 		blueThres = Integer.parseInt(tfBlueThres.getText());
 
+		// Get analyze paricles sizes
+		redPartSize = tfRedPartSize.getText();
+		greenPartSize = tfGreenPartSize.getText();
+		bluePartSize = tfBluePartSize.getText();
+
+		redPartCirc = tfRedPartCirc.getText();
+		greenPartCirc = tfGreenPartCirc.getText();
+		bluePartCirc = tfBluePartCirc.getText();
+
 		// Get boolean values
+		redAnalPart = gdAnalysis.getNextBoolean();
+		greenAnalPart = gdAnalysis.getNextBoolean();
+		blueAnalPart = gdAnalysis.getNextBoolean();
 		showColorColoc = gdAnalysis.getNextBoolean();
 		showIntensityColoc = gdAnalysis.getNextBoolean();
 		showColocImage = gdAnalysis.getNextBoolean();
@@ -497,27 +607,54 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 
 		// Creating dialog to select thresholds and settings
 		gdAnalysis = new GenericDialog("RGB Image Correlator");
-		gdAnalysis.setLayout(new GridLayout(8, 2, 5, 5));
+		gdAnalysis.setLayout(new GridLayout(9, 4, 5, 5));
 
+		gdAnalysis.add(new Label("Red threshold (0-255):", Label.LEFT));
 		tfRedThres = new TextField("" + redThres, 4);
-        tfGreenThres = new TextField("" + greenThres, 4);
-        tfBlueThres = new TextField("" + blueThres, 4);
-		
-		gdAnalysis.add(new Label("Red fluorescense noise threshold (0-255):", Label.LEFT));
 		gdAnalysis.add(tfRedThres);
-		gdAnalysis.add(new Label("Green fluorescense noise threshold (0-255):", Label.LEFT));
+		gdAnalysis.add(new Label("")); gdAnalysis.add(new Label("")); // placeholder labels
+		
+		gdAnalysis.add(new Label("Green threshold (0-255):", Label.LEFT));
+		tfGreenThres = new TextField("" + greenThres, 4);
 		gdAnalysis.add(tfGreenThres);
-		gdAnalysis.add(new Label("Blue fluorescense noise threshold (0-255):", Label.LEFT));
+		gdAnalysis.add(new Label("")); gdAnalysis.add(new Label("")); // placeholder labels
+
+
+		gdAnalysis.add(new Label("Blue threshold (0-255):", Label.LEFT));
+		tfBlueThres = new TextField("" + blueThres, 4);
 		gdAnalysis.add(tfBlueThres);
+		gdAnalysis.add(new Label("")); gdAnalysis.add(new Label("")); // placeholder labels
+
+		// Analyze particles
+		gdAnalysis.addCheckbox("Red analyze particles, sizes (pixels^2):", redAnalPart);
+		tfRedPartSize = new TextField(redPartSize, 4);
+		gdAnalysis.add(tfRedPartSize);
+		gdAnalysis.add(new Label("Red circularity (0.00-1.00)"));
+		tfRedPartCirc = new TextField(redPartCirc, 2);
+		gdAnalysis.add(tfRedPartCirc);
+
+		gdAnalysis.addCheckbox("Green analyze particles, sizes (pixels^2):", redAnalPart);
+		tfGreenPartSize = new TextField(greenPartSize, 4);
+		gdAnalysis.add(tfGreenPartSize);
+		gdAnalysis.add(new Label("Green circularity (0.00-1.00)"));
+		tfGreenPartCirc = new TextField(greenPartCirc, 2);
+		gdAnalysis.add(tfGreenPartCirc);
+
+		gdAnalysis.addCheckbox("Blue analyze particles, size (pixels^2):", redAnalPart);
+		tfBluePartSize = new TextField(bluePartSize, 4);
+		gdAnalysis.add(tfBluePartSize);
+		gdAnalysis.add(new Label("Blue circularity (0.00-1.00)"));
+		tfBluePartCirc = new TextField(bluePartCirc, 2);
+		gdAnalysis.add(tfBluePartCirc);
 		
 		// Settings
+		gdAnalysis.add(new Label("General settings"));
+		gdAnalysis.add(new Label("")); // placeholder label
+		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.addCheckbox("Show color coded colocalization plot", showColorColoc); // NOTE: this plot is not reflecting true colocolization percentages for now
-		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.addCheckbox("Show logarithmic intensity colocalization plot", showIntensityColoc);
-		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.addCheckbox("Show colocalized image", showColocImage);
-		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.addCheckbox("Show data for all channels in one row", showChannelsInOneRow);
 
 		gdAnalysis.showDialog();
@@ -530,7 +667,19 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		greenThres = Integer.parseInt(tfGreenThres.getText());
 		blueThres = Integer.parseInt(tfBlueThres.getText());
 
+		// Get analyze paricles sizes
+		redPartSize = tfRedPartSize.getText();
+		greenPartSize = tfGreenPartSize.getText();
+		bluePartSize = tfBluePartSize.getText();
+
+		redPartCirc = tfRedPartCirc.getText();
+		greenPartCirc = tfGreenPartCirc.getText();
+		bluePartCirc = tfBluePartCirc.getText();
+
 		// Get boolean values
+		redAnalPart = gdAnalysis.getNextBoolean();
+		greenAnalPart = gdAnalysis.getNextBoolean();
+		blueAnalPart = gdAnalysis.getNextBoolean();
 		showColorColoc = gdAnalysis.getNextBoolean();
 		showIntensityColoc = gdAnalysis.getNextBoolean();
 		showColocImage = gdAnalysis.getNextBoolean();
