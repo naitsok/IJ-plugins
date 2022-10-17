@@ -34,6 +34,7 @@ import ij.io.FileInfo;
 import ij.process.*;
 import ij.text.*;
 import ij.plugin.*;
+import ij.plugin.filter.ParticleAnalyzer;
 import ij.measure.*;
 import ij.util.Tools;
 
@@ -257,21 +258,63 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 
 		// Convert to masks and analyze particles if selected
 		if (redAnalPart) {
+			FileInfo fi = iR.getOriginalFileInfo();
+			String title = iR.getTitle();
 			IJ.setThreshold(iR, redThres, 255);
 			IJ.run(iR, "Convert to Mask", "");
-			IJ.run(iR, "Analyze Particles...", "size=" + redPartSize + " pixel circularity=" + redPartCirc + " show=Nothing");
+			// Analyze particles
+			double minSize = Double.parseDouble(redPartSize.split("-")[0].trim());
+			double maxSize = Double.parseDouble(redPartSize.split("-")[1].trim());
+			double minCirc = Double.parseDouble(redPartCirc.split("-")[0].trim());
+			double maxCirc = Double.parseDouble(redPartCirc.split("-")[1].trim());
+			ParticleAnalyzer partAnal = new ParticleAnalyzer(
+				ParticleAnalyzer.INCLUDE_HOLES + ParticleAnalyzer.SHOW_MASKS, ParticleAnalyzer.SHOW_MASKS, 
+				new ResultsTable(), minSize, maxSize, minCirc, maxCirc);
+			partAnal.analyze(iR);
+			iR = partAnal.getOutputImage();
+			iR.setTitle(title);
+			iR.setFileInfo(fi);
+			
 			showColorColoc = false; showIntensityColoc = false; // does not make sense
 		}
 		if (greenAnalPart) {
+			FileInfo fi = iG.getOriginalFileInfo();
+			String title = iG.getTitle();
 			IJ.setThreshold(iG, greenThres, 255);
 			IJ.run(iG, "Convert to Mask", "");
-			IJ.run(iG, "Analyze Particles...", "size=" + greenPartSize + " pixel circularity=" + greenPartCirc + " show=Nothing");
+			// Analyze particles
+			double minSize = Double.parseDouble(greenPartSize.split("-")[0].trim());
+			double maxSize = Double.parseDouble(greenPartSize.split("-")[1].trim());
+			double minCirc = Double.parseDouble(greenPartSize.split("-")[0].trim());
+			double maxCirc = Double.parseDouble(greenPartSize.split("-")[1].trim());
+			ParticleAnalyzer partAnal = new ParticleAnalyzer(
+				ParticleAnalyzer.INCLUDE_HOLES + ParticleAnalyzer.SHOW_MASKS, ParticleAnalyzer.SHOW_MASKS, 
+				new ResultsTable(), minSize, maxSize, minCirc, maxCirc);
+			partAnal.analyze(iG);
+			iG = partAnal.getOutputImage();
+			iG.setTitle(title);
+			iG.setFileInfo(fi);
+
 			showColorColoc = false; showIntensityColoc = false; // does not make sense
 		}
 		if (blueAnalPart) {
+			FileInfo fi = iB.getOriginalFileInfo();
+			String title = iB.getTitle();
 			IJ.setThreshold(iB, blueThres, 255);
 			IJ.run(iB, "Convert to Mask", "");
-			IJ.run(iB, "Analyze Particles...", "size=" + bluePartSize + " pixel circularity=" + bluePartCirc + " show=Nothing");
+			// Analyze particles
+			double minSize = Double.parseDouble(bluePartSize.split("-")[0].trim());
+			double maxSize = Double.parseDouble(bluePartSize.split("-")[1].trim());
+			double minCirc = Double.parseDouble(bluePartSize.split("-")[0].trim());
+			double maxCirc = Double.parseDouble(bluePartSize.split("-")[1].trim());
+			ParticleAnalyzer partAnal = new ParticleAnalyzer(
+				ParticleAnalyzer.INCLUDE_HOLES + ParticleAnalyzer.SHOW_MASKS, ParticleAnalyzer.SHOW_MASKS, 
+				new ResultsTable(), minSize, maxSize, minCirc, maxCirc);
+			partAnal.analyze(iB);
+			iB = partAnal.getOutputImage();
+			iB.setTitle(title);
+			iB.setFileInfo(fi);
+
 			showColorColoc = false; showIntensityColoc = false; // does not make sense
 		}
 
@@ -385,14 +428,14 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		tfRedPartCirc = new TextField(redPartCirc, 2);
 		gdAnalysis.add(tfRedPartCirc);
 
-		gdAnalysis.addCheckbox("Green analyze particles, sizes (pixels^2):", redAnalPart);
+		gdAnalysis.addCheckbox("Green analyze particles, sizes (pixels^2):", greenAnalPart);
 		tfGreenPartSize = new TextField(greenPartSize, 4);
 		gdAnalysis.add(tfGreenPartSize);
 		gdAnalysis.add(new Label("Green circularity (0.00-1.00)"));
 		tfGreenPartCirc = new TextField(greenPartCirc, 2);
 		gdAnalysis.add(tfGreenPartCirc);
 
-		gdAnalysis.addCheckbox("Blue analyze particles, size (pixels^2):", redAnalPart);
+		gdAnalysis.addCheckbox("Blue analyze particles, size (pixels^2):", blueAnalPart);
 		tfBluePartSize = new TextField(bluePartSize, 4);
 		gdAnalysis.add(tfBluePartSize);
 		gdAnalysis.add(new Label("Blue circularity (0.00-1.00)"));
@@ -511,14 +554,14 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		tfRedPartCirc = new TextField(redPartCirc, 2);
 		gdAnalysis.add(tfRedPartCirc);
 
-		gdAnalysis.addCheckbox("Green analyze particles, sizes (pixels^2):", redAnalPart);
+		gdAnalysis.addCheckbox("Green analyze particles, sizes (pixels^2):", greenAnalPart);
 		tfGreenPartSize = new TextField(greenPartSize, 4);
 		gdAnalysis.add(tfGreenPartSize);
 		gdAnalysis.add(new Label("Green circularity (0.00-1.00)"));
 		tfGreenPartCirc = new TextField(greenPartCirc, 2);
 		gdAnalysis.add(tfGreenPartCirc);
 
-		gdAnalysis.addCheckbox("Blue analyze particles, size (pixels^2):", redAnalPart);
+		gdAnalysis.addCheckbox("Blue analyze particles, size (pixels^2):", blueAnalPart);
 		tfBluePartSize = new TextField(bluePartSize, 4);
 		gdAnalysis.add(tfBluePartSize);
 		gdAnalysis.add(new Label("Blue circularity (0.00-1.00)"));
@@ -633,14 +676,14 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		tfRedPartCirc = new TextField(redPartCirc, 2);
 		gdAnalysis.add(tfRedPartCirc);
 
-		gdAnalysis.addCheckbox("Green analyze particles, sizes (pixels^2):", redAnalPart);
+		gdAnalysis.addCheckbox("Green analyze particles, sizes (pixels^2):", greenAnalPart);
 		tfGreenPartSize = new TextField(greenPartSize, 4);
 		gdAnalysis.add(tfGreenPartSize);
 		gdAnalysis.add(new Label("Green circularity (0.00-1.00)"));
 		tfGreenPartCirc = new TextField(greenPartCirc, 2);
 		gdAnalysis.add(tfGreenPartCirc);
 
-		gdAnalysis.addCheckbox("Blue analyze particles, size (pixels^2):", redAnalPart);
+		gdAnalysis.addCheckbox("Blue analyze particles, size (pixels^2):", blueAnalPart);
 		tfBluePartSize = new TextField(bluePartSize, 4);
 		gdAnalysis.add(tfBluePartSize);
 		gdAnalysis.add(new Label("Blue circularity (0.00-1.00)"));
