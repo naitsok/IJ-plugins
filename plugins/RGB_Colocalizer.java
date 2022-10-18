@@ -258,63 +258,16 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 
 		// Convert to masks and analyze particles if selected
 		if (redAnalPart) {
-			FileInfo fi = iR.getOriginalFileInfo();
-			String title = iR.getTitle();
-			IJ.setThreshold(iR, redThres, 255);
-			IJ.run(iR, "Convert to Mask", "");
-			// Analyze particles
-			double minSize = Double.parseDouble(redPartSize.split("-")[0].trim());
-			double maxSize = Double.parseDouble(redPartSize.split("-")[1].trim());
-			double minCirc = Double.parseDouble(redPartCirc.split("-")[0].trim());
-			double maxCirc = Double.parseDouble(redPartCirc.split("-")[1].trim());
-			ParticleAnalyzer partAnal = new ParticleAnalyzer(
-				ParticleAnalyzer.INCLUDE_HOLES + ParticleAnalyzer.SHOW_MASKS, ParticleAnalyzer.SHOW_MASKS, 
-				new ResultsTable(), minSize, maxSize, minCirc, maxCirc);
-			partAnal.analyze(iR);
-			iR = partAnal.getOutputImage();
-			iR.setTitle(title);
-			iR.setFileInfo(fi);
-			
+			iR = analyzeParticles(iR, redThres, redPartSize, redPartCirc);
+			iR.show();
 			showColorColoc = false; showIntensityColoc = false; // does not make sense
 		}
 		if (greenAnalPart) {
-			FileInfo fi = iG.getOriginalFileInfo();
-			String title = iG.getTitle();
-			IJ.setThreshold(iG, greenThres, 255);
-			IJ.run(iG, "Convert to Mask", "");
-			// Analyze particles
-			double minSize = Double.parseDouble(greenPartSize.split("-")[0].trim());
-			double maxSize = Double.parseDouble(greenPartSize.split("-")[1].trim());
-			double minCirc = Double.parseDouble(greenPartSize.split("-")[0].trim());
-			double maxCirc = Double.parseDouble(greenPartSize.split("-")[1].trim());
-			ParticleAnalyzer partAnal = new ParticleAnalyzer(
-				ParticleAnalyzer.INCLUDE_HOLES + ParticleAnalyzer.SHOW_MASKS, ParticleAnalyzer.SHOW_MASKS, 
-				new ResultsTable(), minSize, maxSize, minCirc, maxCirc);
-			partAnal.analyze(iG);
-			iG = partAnal.getOutputImage();
-			iG.setTitle(title);
-			iG.setFileInfo(fi);
-
+			iG = analyzeParticles(iG, greenThres, greenPartSize, greenPartCirc);
 			showColorColoc = false; showIntensityColoc = false; // does not make sense
 		}
 		if (blueAnalPart) {
-			FileInfo fi = iB.getOriginalFileInfo();
-			String title = iB.getTitle();
-			IJ.setThreshold(iB, blueThres, 255);
-			IJ.run(iB, "Convert to Mask", "");
-			// Analyze particles
-			double minSize = Double.parseDouble(bluePartSize.split("-")[0].trim());
-			double maxSize = Double.parseDouble(bluePartSize.split("-")[1].trim());
-			double minCirc = Double.parseDouble(bluePartSize.split("-")[0].trim());
-			double maxCirc = Double.parseDouble(bluePartSize.split("-")[1].trim());
-			ParticleAnalyzer partAnal = new ParticleAnalyzer(
-				ParticleAnalyzer.INCLUDE_HOLES + ParticleAnalyzer.SHOW_MASKS, ParticleAnalyzer.SHOW_MASKS, 
-				new ResultsTable(), minSize, maxSize, minCirc, maxCirc);
-			partAnal.analyze(iB);
-			iB = partAnal.getOutputImage();
-			iB.setTitle(title);
-			iB.setFileInfo(fi);
-
+			iB = analyzeParticles(iB, blueThres, bluePartSize, bluePartCirc);
 			showColorColoc = false; showIntensityColoc = false; // does not make sense
 		}
 
@@ -907,7 +860,29 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		return result;
 	}
 
-	public int getIntensityColor(double ratio) {
+	private ImagePlus analyzeParticles(ImagePlus img, int thres, String partSize, String partCirc) {
+		FileInfo fi = img.getOriginalFileInfo();
+		String title = img.getTitle();
+		IJ.setThreshold(img, thres, 255);
+		IJ.run(img, "Convert to Mask", "");
+
+		double minSize = Double.parseDouble(partSize.split("-")[0].trim());
+		double maxSize = Double.parseDouble(partSize.split("-")[1].trim());
+		double minCirc = Double.parseDouble(partCirc.split("-")[0].trim());
+		double maxCirc = Double.parseDouble(partCirc.split("-")[1].trim());
+		ParticleAnalyzer partAnal = new ParticleAnalyzer(
+			ParticleAnalyzer.INCLUDE_HOLES + ParticleAnalyzer.SHOW_MASKS, ParticleAnalyzer.SHOW_MASKS, 
+			new ResultsTable(), minSize, maxSize, minCirc, maxCirc);
+		partAnal.analyze(img);
+		img = partAnal.getOutputImage();
+		IJ.run(img, "Invert LUT", "");
+		img.setTitle(title);
+		img.setFileInfo(fi);
+		
+		return img;
+	}
+
+	private int getIntensityColor(double ratio) {
 		// calulates color for pixel in the intensity plot
 		int red = 0;
 		int green = 0;
@@ -936,7 +911,8 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		int rgb = (red << 16 | green << 8 | blue);
 		return rgb;
 	}
-	public int getIntensityColor2(double ratio) {
+
+	private int getIntensityColor2(double ratio) {
 		int red = (int) (255 * ratio);
 		int green = (int) (255 * ratio);
 		int blue = (int) (255 * ratio);
@@ -945,7 +921,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		return rgb;
 	}
 
-	public int getAutoThres(Choice choice, int channel, TextField tf) {
+	private int getAutoThres(Choice choice, int channel, TextField tf) {
 		int thres = 75; // default value for noise
 		// Get selected image index
 		int imgIdx = 0;
