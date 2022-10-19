@@ -26,6 +26,9 @@ import java.awt.event.*;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import ij.plugin.frame.*;
 import ij.*;
@@ -211,7 +214,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			redAnalPart = Boolean.parseBoolean(config.getProperty(configRedAnalPart));
 			redPartSize = config.getProperty(configRedPartSize);
 			greenAnalPart = Boolean.parseBoolean(config.getProperty(configGreenAnalPart));
-			greenPartSize = config.getProperty(greenPartSize);
+			greenPartSize = config.getProperty(configGreenPartSize);
 			blueAnalPart = Boolean.parseBoolean(config.getProperty(configBlueAnalPart));
 			bluePartSize = config.getProperty(configBluePartSize);
 			redPartCirc = config.getProperty(configRedPartCirc);
@@ -255,39 +258,46 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		final2ChResutsTitle = resultsTitle;
 		ArrayList<String> lst2ChResults = new ArrayList<String>();
 		ColocResult result = null;
+		// Date and time of analysis
+		LocalDateTime dateTime = LocalDateTime.now();
 
 		// Convert to masks and analyze particles if selected
 		if (redAnalPart) {
 			iR = analyzeParticles(iR, redThres, redPartSize, redPartCirc);
-			iR.show();
+			// iR.show();
 			showColorColoc = false; showIntensityColoc = false; // does not make sense
 		}
 		if (greenAnalPart) {
 			iG = analyzeParticles(iG, greenThres, greenPartSize, greenPartCirc);
+			// iG.show();
 			showColorColoc = false; showIntensityColoc = false; // does not make sense
 		}
 		if (blueAnalPart) {
 			iB = analyzeParticles(iB, blueThres, bluePartSize, bluePartCirc);
+			// iB.show();
 			showColorColoc = false; showIntensityColoc = false; // does not make sense
 		}
 
 		// Perform colocalization
 		if (iR != null && iB != null) {
-			result = colocalize(iR, iB, redThres, blueThres, RED, BLUE, "Red", "Blue");
+			result = colocalize(iR, iB, redThres, blueThres, RED, BLUE, "Red", "Blue", 
+				redAnalPart, blueAnalPart, redPartSize, bluePartSize, redPartCirc, bluePartCirc);
 			lst2ChResults = this.appendResults(lst2ChResults, result.summaryToTextRows(dataFormat), showChannelsInOneRow);
 			if (showChannelsInOneRow) final2ChResutsTitle = final2ChResutsTitle + resultsTitle;
-			result.saveResult(subFolder);
+			result.saveResult(subFolder, dateTime);
 		}
 		if (iG != null && iB != null) {
-			result = colocalize(iG, iB, greenThres, blueThres, GREEN, BLUE, "Green", "Blue");
+			result = colocalize(iG, iB, greenThres, blueThres, GREEN, BLUE, "Green", "Blue",
+				greenAnalPart, blueAnalPart, greenPartSize, bluePartSize, greenPartCirc, bluePartCirc);
 			lst2ChResults = this.appendResults(lst2ChResults, result.summaryToTextRows(dataFormat), showChannelsInOneRow);
 			if (showChannelsInOneRow) final2ChResutsTitle = final2ChResutsTitle + resultsTitle;
-			result.saveResult(subFolder);
+			result.saveResult(subFolder, dateTime);
 		}
 		if (iR != null && iG != null) {
-			result = colocalize(iR, iG, redThres, greenThres, RED, GREEN, "Red", "Green");
+			result = colocalize(iR, iG, redThres, greenThres, RED, GREEN, "Red", "Green",
+				redAnalPart, greenAnalPart, redPartSize, greenPartSize, redPartCirc, greenPartCirc);
 			lst2ChResults = this.appendResults(lst2ChResults, result.summaryToTextRows(dataFormat), showChannelsInOneRow);
-			result.saveResult(subFolder);
+			result.saveResult(subFolder, dateTime);
 		}
 		allLst2ChResults.addAll(lst2ChResults);
 		
@@ -296,8 +306,9 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		if (iR != null && iG != null && iB != null) {
 			showColorColoc = false; showIntensityColoc = false; // does not make sense because Greed/Red coloc image is mask
 			ImagePlus iRxB = new ImagePlus("Colocalized_Red_and_Green_channels", result.iCh1vsCh2Stack);
-			result = colocalize(iB, iRxB, blueThres, 100, BLUE, ORANGE, "Blue", "Red+Green_colocalized");
-			result.saveResult(subFolder);
+			result = colocalize(iB, iRxB, blueThres, 100, BLUE, ORANGE, "Blue", "Red+Green_colocalized",
+				false, blueAnalPart, "Not applicable", bluePartSize, "Not applicable", bluePartCirc);
+			result.saveResult(subFolder, dateTime);
 		}
 		Collections.addAll(allLst3ChResults, result.summaryToTextRows(dataFormat));
 
@@ -711,7 +722,10 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 	public ColocResult colocalize(ImagePlus img1, ImagePlus img2, 
 		int thres1, int thres2, 
 		int color1, int color2,
-		String ch1Title, String ch2Title) {
+		String ch1Title, String ch2Title,
+		boolean ch1AnalPart, boolean ch2AnalPart,
+		String ch1PartSize, String ch2PartSize,
+		String ch1PartCirc, String ch2PartCirc) {
 
 		// Colocalize two image stacks
 		// Returns array of strings with results to be dispalyed
@@ -736,7 +750,10 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			return null;
 		}
 		
-		ColocResult result = new ColocResult(img1, img2, ch1Title, ch2Title, thres1, thres2, stackSize);
+		ColocResult result = new ColocResult(
+			img1, img2, ch1Title, ch2Title, thres1, thres2, 
+			ch1AnalPart, ch2AnalPart, ch1PartSize, ch2PartSize,
+			ch1PartCirc, ch2PartCirc, stackSize);
 		
 		// Image processors for images and correlation graphs for each image in the stack
 		ImageProcessor img1Proc = null, img2Proc = null;
@@ -875,6 +892,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			new ResultsTable(), minSize, maxSize, minCirc, maxCirc);
 		partAnal.analyze(img);
 		img = partAnal.getOutputImage();
+		IJ.run(img, "Watershed", "");
 		IJ.run(img, "Invert LUT", "");
 		img.setTitle(title);
 		img.setFileInfo(fi);
@@ -989,6 +1007,10 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		public String ch1Title, ch2Title;
 		// Thresholds for channels to colocalize
 		public int ch1Thres, ch2Thres;
+		// Analyze particles
+		public boolean ch1AnalPart, ch2AnalPart;
+		public String ch1PartSize, ch2PartSize;
+		public String ch1PartCirc, ch2PartCirc;
 		// Image with colocalization
 		public ImageStack iCh1vsCh2Stack;
 		// Stack plots to keep correlation plots for each slice
@@ -1027,7 +1049,11 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 
 		public ColocResult(ImagePlus img1, ImagePlus img2,
 			String chan1Title, String chan2Title,
-			int chan1Thres, int chan2Thres, int numSlices) {
+			int chan1Thres, int chan2Thres,
+			boolean chan1AP, boolean chan2AP,
+			String chan1PS, String chan2PS,
+			String chan1PC, String chan2PC,
+			int numSlices) {
 			// Creates an empty ColocResults for two images specified by titles
 			// numSlices is number of slices in the images
 			i1Title = img1.getTitle();
@@ -1045,6 +1071,14 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			ch2Title = chan2Title;
 			ch1Thres = chan1Thres;
 			ch2Thres = chan2Thres;
+
+			// Analyze particles
+			ch1AnalPart = chan1AP;
+			ch2AnalPart = chan2AP;
+			ch1PartSize = chan1PS;
+			ch2PartSize = chan2PS;
+			ch1PartCirc = chan1PC;
+			ch2PartCirc = chan2PC;
 			
 			// Create the image stack for colocalized image
 			ImageStack img1Stack = img1.getStack();
@@ -1116,7 +1150,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			return colocStackSB;
 		}
 
-		public void saveResult(String analysisFolderName) {
+		public void saveResult(String analysisFolderName, LocalDateTime dateTime) {
 			// Save analysis metadata
 			StringBuilder metadata = new StringBuilder();
 			metadata.append("Image 1 information\n");
@@ -1124,29 +1158,36 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			metadata.append("Path:\t" + i1Path + "\n");
 			metadata.append("Channel:\t" + ch1Title + "\n");
 			metadata.append("Threshold:\t" + new Integer(ch1Thres).toString() + "\n");
-			metadata.append("Mask used:\t" + "\n");
-			metadata.append("Particle size:\t" + "\n");
+			metadata.append("Analyze particles:\t" + new Boolean(ch1AnalPart).toString() + "\n");
+			metadata.append("Particle size (pixels^2):\t" + ch1PartSize + "\n");
+			metadata.append("Particle circularity:\t" + ch1PartCirc + "\n");
 			metadata.append("\n");
 			metadata.append("Image 2 information\n");
 			metadata.append("Name:\t" + i2Title + "\n");
 			metadata.append("Path:\t" + i2Path + "\n");
 			metadata.append("Channel:\t" + ch2Title + "\n");
 			metadata.append("Threshold:\t" + new Integer(ch2Thres).toString() + "\n");
-			metadata.append("Mask used:\t" + "\n");
-			metadata.append("Particle size:\t" + "\n");
+			metadata.append("Analyze particles used:\t" + new Boolean(ch2AnalPart).toString() +  "\n");
+			metadata.append("Particle size (pixels^2):\t" + ch2PartSize + "\n");
+			metadata.append("Particle circularity:\t" + ch2PartCirc + "\n");
 			// Save colocalization matrix
 			StringBuilder colocMatrix = colocStackToSBuilder();
 
 			String metadataFileName = "Metadata_" + i1Title + "_vs_" + i2Title + "__" + ch1Title + "_vs_" +ch2Title + ".txt";
 			String matrixFileName = "Matrix_" + i1Title + "_vs_" + i2Title + "__" + ch1Title + "_vs_" +ch2Title + ".txt";
 
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+			String dateFolder = formatter.format(dateTime);
+			formatter = DateTimeFormatter.ofPattern("HH-mm-ss");
+			String timeFolder = formatter.format(dateTime);
 			// Save result in the subdirectory where the image or directroy with 
 			// images is located. If images are located in the different folders
 			// then saves the reults in both of the folders.
 			if (i1Path != null && i1Path.length() > 0) {
 				File analysisFolder1 = new File(new File(i1Path).getParent(), analysisFolderName);
+				analysisFolder1 = new File(new File(analysisFolder1, dateFolder), timeFolder);
 				if (!analysisFolder1.exists()) {
-					analysisFolder1.mkdir();
+					analysisFolder1.mkdirs();
 				}
 				try {
 					OutputStreamWriter fileToWrite = new OutputStreamWriter(new FileOutputStream(new File(analysisFolder1, metadataFileName)), StandardCharsets.UTF_8);
@@ -1161,8 +1202,9 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			}
 			if (i2Path != null && i2Path.length() > 0) {
 				File analysisFolder2 = new File(new File(i2Path).getParent(), analysisFolderName);
+				analysisFolder2 = new File(new File(analysisFolder2, dateFolder), timeFolder);
 				if (!analysisFolder2.exists()) {
-					analysisFolder2.mkdir();
+					analysisFolder2.mkdirs();
 				}
 				try {
 					OutputStreamWriter fileToWrite =  new OutputStreamWriter(new FileOutputStream(new File(analysisFolder2, metadataFileName)), StandardCharsets.UTF_8);
