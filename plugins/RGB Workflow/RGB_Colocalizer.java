@@ -37,6 +37,7 @@ import ij.io.FileInfo;
 import ij.process.*;
 import ij.text.*;
 import ij.plugin.*;
+import ij.plugin.filter.EDM;
 import ij.plugin.filter.ParticleAnalyzer;
 import ij.measure.*;
 import ij.util.Tools;
@@ -311,7 +312,9 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			result.saveResult(subFolder, dateTime);
 		}
 		Collections.addAll(allLst3ChResults, result.summaryToTextRows(dataFormat));
-
+		if (iR != null) { iR.changes = false; iR.close(); }
+		if (iG != null) { iG.changes = false; iG.close(); }
+		if (iB != null) { iB.changes = false; iB.close(); }
 	}
 
 	private void showResults() {
@@ -425,11 +428,11 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		// Get images and their titles
 		// String tempTitle = "";
 		int idxR = gdAnalysis.getNextChoiceIndex();
-		if (idxR > 0) { iR = to8bitChannel(WindowManager.getImage(wList[idxR - 1]), 0); } else { iR = null; }
+		if (idxR > 0) { iR = to8bitChannel(WindowManager.getImage(wList[idxR - 1]).duplicate(), 0); } else { iR = null; }
 		int idxG = gdAnalysis.getNextChoiceIndex();
-		if (idxG > 0) { iG = to8bitChannel(WindowManager.getImage(wList[idxG - 1]), 1); } else { iG = null; }
+		if (idxG > 0) { iG = to8bitChannel(WindowManager.getImage(wList[idxG - 1]).duplicate(), 1); } else { iG = null; }
 		int idxB = gdAnalysis.getNextChoiceIndex();
-		if (idxB > 0) { iB = to8bitChannel(WindowManager.getImage(wList[idxB - 1]), 2); } else { iB = null; }
+		if (idxB > 0) { iB = to8bitChannel(WindowManager.getImage(wList[idxB - 1]).duplicate(), 2); } else { iB = null; }
 
 		// Get thresholds
 		redThres = Integer.parseInt(tfRedThres.getText());
@@ -888,12 +891,14 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		double minCirc = Double.parseDouble(partCirc.split("-")[0].trim());
 		double maxCirc = Double.parseDouble(partCirc.split("-")[1].trim());
 		ParticleAnalyzer partAnal = new ParticleAnalyzer(
-			ParticleAnalyzer.INCLUDE_HOLES + ParticleAnalyzer.SHOW_MASKS, ParticleAnalyzer.SHOW_MASKS, 
-			new ResultsTable(), minSize, maxSize, minCirc, maxCirc);
+		 	ParticleAnalyzer.INCLUDE_HOLES + ParticleAnalyzer.SHOW_MASKS, 0, 
+		 	new ResultsTable(), minSize, maxSize, minCirc, maxCirc);
 		partAnal.analyze(img);
 		img = partAnal.getOutputImage();
+
 		IJ.run(img, "Watershed", "");
 		IJ.run(img, "Invert LUT", "");
+
 		img.setTitle(title);
 		img.setFileInfo(fi);
 		
