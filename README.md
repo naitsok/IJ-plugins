@@ -7,20 +7,20 @@ A collection of plugins for ImageJ developed for image analysis with specific re
 
 ## List of plugins
 
-- [RGB Colocalizer](#rgb-colocalizer) ([RGB_Colocalizer.java](./plugins/RGB_Colocalizer.java)).
-- [RGB Immunoreactivity](#rgb-immunoreactivity) ([RGB_Immunoreactivity.java](./plugins/RGB_Immunoreactivity.java)).
+- [RGB Colocalizer](#rgb-colocalizer) ([RGB_Colocalizer.java](./plugins/RGB Workflow/RGB_Colocalizer.java)).
+- [RGB Immunoreactivity](#rgb-immunoreactivity) ([RGB_Immunoreactivity.java](./plugins/RGB Workflow/RGB_Immunoreactivity.java)).
 
 [Installation instructions](#requirements-and-installation).
 
 
 ### RGB Colocalizer
 
-RGB_Colocolizer.java plugin performs colocalization analysis in three distinctive ways:
+RGB_Colocalizer.java plugin performs colocalization analysis in three distinctive ways:
 1. Colocalization analysis on images representing separate channels (e.g. red, green, ot blue).
 2. Colocalization analysis on one image with all three channels.
 3. Colocalization analysis on a directory that contains collection of three channel images.
 
-Depending on the selected analysis type, the pluging will allow to choose between images for separate channels, one three channel image and a directory with three channel images. For all of the analysis types, a user will be prompted to put threshold values to distinguish between noise level and signal in the images. For the seprate channel analysis or analysis of one three channel images it is possible to calculate thresholds automatically using the plugin functionality.
+Depending on the selected analysis type, the plugin will allow choosing between images for separate channels, one three channel image and a directory with three channel images. For all the analysis types, a user will be prompted to put threshold values to distinguish between noise level and signal in the images. For the separate channel analysis or analysis of one three channel images it is possible to calculate thresholds automatically using the plugin functionality.
 
 The main reporting page is the Colocalization statistics for pair of channels, which has the following columns:
 - Image titles for colocalization.
