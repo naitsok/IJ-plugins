@@ -80,9 +80,9 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 	private String configColocImage = "show_colocalized_image";
 	private boolean showColocImage = false;
 
-	// If true, for the blue channel (DAPI/Hoechst 33342 stained nuclei) creates mask of cell nuclei using "Analyze particles" functionaloty of ImageJ
-	private String configNucleiBlueMask = "blue_channel_to_nuclei_mask";
-	private boolean nucleiBlueMask = false;
+	// Do 3-channel colocalization
+	private String config3ChannelColoc = "three_channel_colocalization";
+	private boolean do3ChannelColoc = false;
 
 	// Dialog to select experiment type: analyze channels separately, analyze one 3 channel image, or analyze directory with 3 channel images
 	private GenericDialog gdChooseAnalysis;
@@ -207,9 +207,8 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			showColorColoc = Boolean.parseBoolean(config.getProperty(configColorColoc));
 			showIntensityColoc = Boolean.parseBoolean(config.getProperty(configIntensityColoc));
 			showChannelsInOneRow = Boolean.parseBoolean(config.getProperty(configChannelsInOneRow));
-			showColocImage = Boolean.parseBoolean(config.getProperty(configColocImage));
-			nucleiBlueMask = Boolean.parseBoolean(config.getProperty(configNucleiBlueMask));
-			redThres = Integer.parseInt(config.getProperty(configRedThres));
+			showColocImage = Boolean.parseBoolean(config.getProperty(configColocImage));			redThres = Integer.parseInt(config.getProperty(configRedThres));
+			do3ChannelColoc = Boolean.parseBoolean(config.getProperty(config3ChannelColoc));
 			greenThres = Integer.parseInt(config.getProperty(configGreenThres));
 			blueThres = Integer.parseInt(config.getProperty(configBlueThres));
 			redAnalPart = Boolean.parseBoolean(config.getProperty(configRedAnalPart));
@@ -234,7 +233,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			config.setProperty(configIntensityColoc, new Boolean(showIntensityColoc).toString());
 			config.setProperty(configChannelsInOneRow, new Boolean(showChannelsInOneRow).toString());
 			config.setProperty(configColocImage, new Boolean(showColocImage).toString());
-			config.setProperty(configNucleiBlueMask, new Boolean(nucleiBlueMask).toString());
+			config.setProperty(config3ChannelColoc, new Boolean(do3ChannelColoc).toString());
 			config.setProperty(configRedThres, new Integer(redThres).toString());
 			config.setProperty(configGreenThres, new Integer(greenThres).toString());
 			config.setProperty(configBlueThres, new Integer(blueThres).toString());
@@ -304,7 +303,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		
 		// now do the blue (DAPI) colocalization with the result of colocalization of red and green channel
 		// result variable now contains colocalization of Red and Green channels
-		if (iR != null && iG != null && iB != null) {
+		if ((iR != null && iG != null && iB != null) && do3ChannelColoc) {
 			showColorColoc = false; showIntensityColoc = false; // does not make sense because Greed/Red coloc image is mask
 			ImagePlus iRxB = new ImagePlus("Colocalized_Red_and_Green_channels", result.iCh1vsCh2Stack);
 			result = colocalize(iB, iRxB, blueThres, 100, BLUE, ORANGE, "Blue", "Red+Green_colocalized",
@@ -319,16 +318,20 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 
 	private void showResults() {
 		// Colocalization for each pair of channels
-		new TextWindow("Colocalization statisitics for pair of channels",
-		final2ChResutsTitle, 
-		String.join("\n", allLst2ChResults), 
-		1500, 900);
+		new TextWindow(
+			"Colocalization statisitics for pair of channels",
+			final2ChResutsTitle, 
+			String.join("\n", allLst2ChResults), 
+			1500, 900);
 
 		// Colocalization for blue (nuclei) vs colocalized Red and Green
-		new TextWindow("Colocalization statistics for three channels",
-			resultsTitle,
-			String.join("\n", allLst3ChResults),
-			1500, 900);
+		if (do3ChannelColoc) {
+			new TextWindow(
+				"Colocalization statistics for three channels",
+				resultsTitle,
+				String.join("\n", allLst3ChResults),
+				1500, 900);
+		}
 		return;
 	}
 
@@ -413,7 +416,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		gdAnalysis.add(new Label("General settings"));
 		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.add(new Label("")); // placeholder label
-		gdAnalysis.add(new Label("")); // placeholder label
+		gdAnalysis.addCheckbox("Perform 3 channel colocalization", do3ChannelColoc);
 		gdAnalysis.addCheckbox("Show color coded colocalization plot", showColorColoc); // NOTE: this plot is not reflecting true colocolization percentages for now
 		gdAnalysis.addCheckbox("Show logarithmic intensity colocalization plot", showIntensityColoc);
 		gdAnalysis.addCheckbox("Show colocalized image", showColocImage);
@@ -452,6 +455,8 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		redAnalPart = gdAnalysis.getNextBoolean();
 		greenAnalPart = gdAnalysis.getNextBoolean();
 		blueAnalPart = gdAnalysis.getNextBoolean();
+
+		do3ChannelColoc = gdAnalysis.getNextBoolean();
 		showColorColoc = gdAnalysis.getNextBoolean();
 		showIntensityColoc = gdAnalysis.getNextBoolean();
 		showColocImage = gdAnalysis.getNextBoolean();
@@ -539,7 +544,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		gdAnalysis.add(new Label("General settings"));
 		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.add(new Label("")); // placeholder label
-		gdAnalysis.add(new Label("")); // placeholder label
+		gdAnalysis.addCheckbox("Perform 3 channel colocalization", do3ChannelColoc);
 		gdAnalysis.addCheckbox("Show color coded colocalization plot", showColorColoc); // NOTE: this plot is not reflecting true colocolization percentages for now
 		gdAnalysis.addCheckbox("Show logarithmic intensity colocalization plot", showIntensityColoc);
 		gdAnalysis.addCheckbox("Show colocalized image", showColocImage);
@@ -576,6 +581,8 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		redAnalPart = gdAnalysis.getNextBoolean();
 		greenAnalPart = gdAnalysis.getNextBoolean();
 		blueAnalPart = gdAnalysis.getNextBoolean();
+
+		do3ChannelColoc = gdAnalysis.getNextBoolean();
 		showColorColoc = gdAnalysis.getNextBoolean();
 		showIntensityColoc = gdAnalysis.getNextBoolean();
 		showColocImage = gdAnalysis.getNextBoolean();
@@ -661,7 +668,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		gdAnalysis.add(new Label("General settings"));
 		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.add(new Label("")); // placeholder label
-		gdAnalysis.add(new Label("")); // placeholder label
+		gdAnalysis.addCheckbox("Perform 3 channel colocalization", do3ChannelColoc);
 		gdAnalysis.addCheckbox("Show color coded colocalization plot", showColorColoc); // NOTE: this plot is not reflecting true colocolization percentages for now
 		gdAnalysis.addCheckbox("Show logarithmic intensity colocalization plot", showIntensityColoc);
 		gdAnalysis.addCheckbox("Show colocalized image", showColocImage);
@@ -690,6 +697,8 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		redAnalPart = gdAnalysis.getNextBoolean();
 		greenAnalPart = gdAnalysis.getNextBoolean();
 		blueAnalPart = gdAnalysis.getNextBoolean();
+
+		do3ChannelColoc = gdAnalysis.getNextBoolean();
 		showColorColoc = gdAnalysis.getNextBoolean();
 		showIntensityColoc = gdAnalysis.getNextBoolean();
 		showColocImage = gdAnalysis.getNextBoolean();
