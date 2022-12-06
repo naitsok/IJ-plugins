@@ -86,6 +86,10 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 	private String configColocImage = "show_colocalized_image";
 	private boolean showColocImage = false;
 
+	// Pearson correlation with or without pixels under threshold
+	private String configPearsonThres = "skip_pixels_below_threshold_for_Pearson_correlasion";
+	private boolean skipPearsonBelowThres = false;
+
 	// Dialog to select experiment type: analyze channels separately, analyze one 3 channel image, or analyze directory with 3 channel images
 	private GenericDialog gdChooseAnalysis;
 	private Button btnSeparateChannels;
@@ -222,6 +226,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			redPartCirc = config.getProperty(configRedPartCirc);
 			greenPartCirc = config.getProperty(configGreenPartCirc);
 			bluePartCirc = config.getProperty(configBluePartCirc);
+			skipPearsonBelowThres = Boolean.parseBoolean(config.getProperty(configPearsonThres));
 			configReader.close();
 		}
 		catch (FileNotFoundException ex) { /* No config file found, will create a new one automatically. */ }
@@ -247,6 +252,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			config.setProperty(configRedPartCirc, redPartCirc);
 			config.setProperty(configGreenPartCirc, greenPartCirc);
 			config.setProperty(configBluePartCirc, bluePartCirc);
+			config.setProperty(configPearsonThres, new Boolean(skipPearsonBelowThres).toString());
 			FileWriter configWriter = new FileWriter(configFile);
 			config.store(configWriter, configFileName);
 			configWriter.close();
@@ -413,7 +419,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		gdAnalysis.add(new Label("General settings"));
 		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.add(new Label("")); // placeholder label
-		gdAnalysis.add(new Label("")); // placeholder label
+		gdAnalysis.addCheckbox("Skip pixels below thresholds for Pearson correlation", skipPearsonBelowThres);
 		gdAnalysis.addCheckbox("Show color coded colocalization plot", showColorColoc); // NOTE: this plot is not reflecting true colocolization percentages for now
 		gdAnalysis.addCheckbox("Show logarithmic intensity colocalization plot", showIntensityColoc);
 		gdAnalysis.addCheckbox("Show colocalized image", showColocImage);
@@ -452,6 +458,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		redAnalPart = gdAnalysis.getNextBoolean();
 		greenAnalPart = gdAnalysis.getNextBoolean();
 		blueAnalPart = gdAnalysis.getNextBoolean();
+		skipPearsonBelowThres = gdAnalysis.getNextBoolean();
 		showColorColoc = gdAnalysis.getNextBoolean();
 		showIntensityColoc = gdAnalysis.getNextBoolean();
 		showColocImage = gdAnalysis.getNextBoolean();
@@ -539,7 +546,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		gdAnalysis.add(new Label("General settings"));
 		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.add(new Label("")); // placeholder label
-		gdAnalysis.add(new Label("")); // placeholder label
+		gdAnalysis.addCheckbox("Skip pixels below thresholds for Pearson correlation", skipPearsonBelowThres);
 		gdAnalysis.addCheckbox("Show color coded colocalization plot", showColorColoc); // NOTE: this plot is not reflecting true colocolization percentages for now
 		gdAnalysis.addCheckbox("Show logarithmic intensity colocalization plot", showIntensityColoc);
 		gdAnalysis.addCheckbox("Show colocalized image", showColocImage);
@@ -576,6 +583,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		redAnalPart = gdAnalysis.getNextBoolean();
 		greenAnalPart = gdAnalysis.getNextBoolean();
 		blueAnalPart = gdAnalysis.getNextBoolean();
+		skipPearsonBelowThres = gdAnalysis.getNextBoolean();
 		showColorColoc = gdAnalysis.getNextBoolean();
 		showIntensityColoc = gdAnalysis.getNextBoolean();
 		showColocImage = gdAnalysis.getNextBoolean();
@@ -661,7 +669,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		gdAnalysis.add(new Label("General settings"));
 		gdAnalysis.add(new Label("")); // placeholder label
 		gdAnalysis.add(new Label("")); // placeholder label
-		gdAnalysis.add(new Label("")); // placeholder label
+		gdAnalysis.addCheckbox("Skip pixels below thresholds for Pearson correlation", skipPearsonBelowThres);
 		gdAnalysis.addCheckbox("Show color coded colocalization plot", showColorColoc); // NOTE: this plot is not reflecting true colocolization percentages for now
 		gdAnalysis.addCheckbox("Show logarithmic intensity colocalization plot", showIntensityColoc);
 		gdAnalysis.addCheckbox("Show colocalized image", showColocImage);
@@ -690,6 +698,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		redAnalPart = gdAnalysis.getNextBoolean();
 		greenAnalPart = gdAnalysis.getNextBoolean();
 		blueAnalPart = gdAnalysis.getNextBoolean();
+		skipPearsonBelowThres = gdAnalysis.getNextBoolean();
 		showColorColoc = gdAnalysis.getNextBoolean();
 		showIntensityColoc = gdAnalysis.getNextBoolean();
 		showColocImage = gdAnalysis.getNextBoolean();
@@ -804,6 +813,14 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 						// Pixel values z1 and z2 are both below set thresholds, color is black
 						colocColorCode.putPixel(z1, 255 - z2, GRAY);
 						result.countsBelowThres[i - 1] = result.countsBelowThres[i - 1] + 1;
+						// Do not count pixels for Pearson correlation below threshold
+						if (skipPearsonBelowThres) {
+							sum_x -= (double)z1;
+							sum_y -= (double)z2;
+							x_sq -= (double)z1 * z1;
+							y_sq -= (double)z2 * z2;
+							xy -= (double)z1 * z2;
+						}
 					}
 					if (z1 >= thres1 && z2 < thres2) {
 						// Pixel values z1 are above threshold, color is for z1
