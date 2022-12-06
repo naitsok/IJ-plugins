@@ -832,7 +832,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			}
 			// Calculate Pearson correlation for slice i
 			double num_pixels = (double)width * height;
-			result.corrPearson[i] = ((num_pixels * xy) - (sum_x * sum_y)) / 
+			result.corrPearson[i - 1] = ((num_pixels * xy) - (sum_x * sum_y)) / 
 				Math.sqrt((num_pixels * x_sq - sum_x * sum_x) * (num_pixels * y_sq - sum_y * sum_y));
 
 			// Create intensity plot from colocCounts and using maxCount
