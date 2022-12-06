@@ -133,12 +133,12 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 	private static int ORANGE = 0xFF8000;
 
 	// Results
-	private String resultsTitle = "Image titles for colocalization\tSlice #\tCh1 vs Ch2\tCh1 pixels\tCh2 pixels\tColoc pixels\tPercent Ch1\tPercent Ch2\tPercent Coloc\tCh1 Overlap Ch2\tCh2 Overlap Ch1\t";
+	private String resultsTitle = "Image titles for colocalization\tSlice #\tCh1 vs Ch2\tCh1 pixels\tCh2 pixels\tColoc pixels\tPercent Ch1\tPercent Ch2\tPercent Coloc\tCh1 Overlap Ch2\tCh2 Overlap Ch1\tPearson\t";
 	// private String rgTitle = "%s vs %s\tRed pixels\tGreen pixels\tColoc pixels\tPerc Red\tPerc Green\tPerc Coloc\tRed Overlap Green\tGreen Overlap Red\t";
 	// private String rbTitle = "%s vs %s\tRed pixels\tBlue pixels\tColoc pixels\tPerc Red\tPerc Blue\tPerc Coloc\tRed Overlap Blue\tBlue Overlap Red\t";
 	// private String gbTitle = "%s vs %s\tGreen pixels\tBlue pixels\tColoc pixels\tPerc Green\tPerc Blue\tPerc Coloc\tGreen Overlap Blue\tBlue Overlap Green\t";
 	// private String allChTitle = "%s vs %s\tBlue pixels\tGreen/Red pixels\tColoc pixels\tPerc Blue\tPerc Green/Red\tPerc Coloc\tBlue Overlap Green/Red\tGreen/Red Overlap Blue\t";
-	private String dataFormat = "%s\t%d\t%s\t%d\t%d\t%d\t%.3f\t%.3f\t%.3f\t%.5f\t%.5f\t";
+	private String dataFormat = "%s\t%d\t%s\t%d\t%d\t%d\t%.3f\t%.3f\t%.3f\t%.5f\t%.5f\t%.3f\t";
 	private String final2ChResutsTitle = "";
 	private ArrayList<String> allLst2ChResults = new ArrayList<String>();
 	private ArrayList<String> allLst3ChResults = new ArrayList<String>();
@@ -782,10 +782,11 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			// init maxCount for slice i to 0
 			int tempCount = 0;
 			result.maxCounts[i - 1] = 0;
-			
+			// variables for Pearson correlation
+			double sum_x = 0, sum_y = 0, x_sq = 0, y_sq = 0, xy = 0;
 			
 			for (int y = 0; y < height; y++) { // Loop through Y coordinate
-                		for (int x = 0; x < width; x++) { // Loop through X coordinate
+                for (int x = 0; x < width; x++) { // Loop through X coordinate
 
 					// z-value of pixel (x, y) in img1Stack on slice i
 					z1 = (int)img1Proc.getPixelValue(x, y); 
@@ -821,8 +822,18 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 						// also add white pixel for the colocalized image
 						colocProc.putPixel(x, y, WHITE);
 					}
+					// Pearson correlation calculation
+					sum_x += (double)z1;
+					sum_y += (double)z2;
+					x_sq += (double)z1 * z1;
+					y_sq += (double)z2 * z2;
+					xy += (double)z1 * z2;
 				}
 			}
+			// Calculate Pearson correlation for slice i
+			double num_pixels = (double)width * height;
+			result.corrPearson[i] = ((num_pixels * xy) - (sum_x * sum_y)) / 
+				Math.sqrt((num_pixels * x_sq - sum_x * sum_x) * (num_pixels * y_sq - sum_y * sum_y));
 
 			// Create intensity plot from colocCounts and using maxCount
 			for (int x = 0; x < 256; x++) { // Loop through Y coordinate
@@ -1051,6 +1062,8 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 		public double[] ch1OverlapCh2;
 		// Fraction of channel 2 overlapping channel 1 (M2 coefficient) for each slice
 		public double[] ch2OverlapCh1;
+		// Pearson correlation coefficient for each slice
+		public double[] corrPearson;
 
 		public ColocResult(ImagePlus img1, ImagePlus img2,
 			String chan1Title, String chan2Title,
@@ -1110,6 +1123,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			percColoc = new double[nSlices];
 			ch1OverlapCh2 = new double[nSlices];
 			ch2OverlapCh1 = new double[nSlices];
+			corrPearson = new double[nSlices];
 		}
 
 		public String[] summaryToTextRows(String dataFormat) {
@@ -1121,7 +1135,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 					ch1Title + " vs " + ch2Title, 
 					ch1Counts[i], ch2Counts[i], colocCounts[i],
 					percCh1NoCh2[i], percCh2NoCh1[i], percColoc[i],
-					ch1OverlapCh2[i], ch2OverlapCh1[i]);
+					ch1OverlapCh2[i], ch2OverlapCh1[i], corrPearson[i]);
 			}
 			return arrResult;
 		}
@@ -1175,6 +1189,12 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			metadata.append("Analyze particles used:\t" + new Boolean(ch2AnalPart).toString() +  "\n");
 			metadata.append("Particle size (pixels^2):\t" + ch2PartSize + "\n");
 			metadata.append("Particle circularity:\t" + ch2PartCirc + "\n");
+			metadata.append("Pearson correlation:\t");
+			for (int i = 0; i < nSlices; i++) {
+				metadata.append(new Double(corrPearson[i]).toString() + "\t");
+			}
+			metadata.append("\n");
+
 			// Save colocalization matrix
 			StringBuilder colocMatrix = colocStackToSBuilder();
 
