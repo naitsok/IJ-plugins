@@ -792,7 +792,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 			int tempCount = 0;
 			result.maxCounts[i - 1] = 0;
 			// variables for Pearson correlation
-			double sum_x = 0, sum_y = 0, x_sq = 0, y_sq = 0, xy = 0;
+			double sum_x = 0, sum_y = 0, x_sq = 0, y_sq = 0, xy = 0, num_pixels = 0;
 			
 			for (int y = 0; y < height; y++) { // Loop through Y coordinate
                 for (int x = 0; x < width; x++) { // Loop through X coordinate
@@ -820,6 +820,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 							x_sq -= (double)z1 * z1;
 							y_sq -= (double)z2 * z2;
 							xy -= (double)z1 * z2;
+							num_pixels -= 1;
 						}
 					}
 					if (z1 >= thres1 && z2 < thres2) {
@@ -848,7 +849,7 @@ public class RGB_Colocalizer implements PlugIn, ActionListener, Measurements {
 				}
 			}
 			// Calculate Pearson correlation for slice i
-			double num_pixels = (double)width * height;
+			num_pixels += (double)width * height;
 			result.corrPearson[i - 1] = ((num_pixels * xy) - (sum_x * sum_y)) / 
 				Math.sqrt((num_pixels * x_sq - sum_x * sum_x) * (num_pixels * y_sq - sum_y * sum_y));
 
